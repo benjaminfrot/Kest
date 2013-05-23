@@ -1,0 +1,16 @@
+Name:                Kest
+Version:             0.3
+Description:         Approximate Kolmogorov Complexity by Compressing Strings
+License:             GPL
+License-file:        LICENSE
+Author:              Benjamin Frot
+Maintainer:          benjamin.frot@dtc.ox.ac.uk
+Build-Type:          Simple
+cabal-version: >= 1.4
+Cabal-Version:       >=1.2
+Executable Kest
+  Main-is : Kest.lhs
+  Build-depends :  bytestring, MissingH, parallel, random, containers, cmdargs, stringsearch, base, math-functions, word8, exact-combinatorics
+  ghc-options: -threaded -O2
+  extensions: ViewPatterns DeriveDataTypeable
+  Other-Modules: StringUtils,RecursiveCompression
