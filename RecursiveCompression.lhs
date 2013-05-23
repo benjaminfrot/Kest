@@ -2,7 +2,7 @@ RecursiveCompression.lhs - A Haskell
 implementation of a 'compression' algorithm used to estimate 
 Kolmogorov Complexity.
 
-This algorithm *actually* encode strings, it is not just an estimation, encoded strings can be uniquely decoded
+This algorithm *actually* encodes strings, it is not just an estimation, encoded strings can be uniquely decoded
 
 Decoding such a string is fast and is not implemented here as any scripting language is good enough for that.
 
@@ -30,7 +30,7 @@ Decoding such a string is fast and is not implemented here as any scripting lang
 Simple encoding of a binary string
 NOTE : It cannot be used on its own, one would need to encode the
 length as well. Here, only the number of zeros or ones is encoded and
-the rank of the string
+the rank of the string.
 
 > encodeBinary :: B.ByteString -> B.ByteString
 > encodeBinary s = symCount `B.append` selfDelimited (toBin $ rankBinary s)
@@ -39,7 +39,7 @@ the rank of the string
 >			nZeros = toInteger (B.count W._0 s)
 >			nOnes = (toInteger $ B.length s ) - nZeros
 
-EncodeNAry : Encode strings with more than two symbols
+EncodeNAry : Encode strings with more than two symbols.
  
 > encodeNAry :: Bool -> B.ByteString -> B.ByteString -> B.ByteString
 > encodeNAry b p s = 
