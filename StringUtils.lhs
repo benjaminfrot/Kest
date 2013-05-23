@@ -1,4 +1,4 @@
-StringUtils.lhs - A set functions performing basic operations (mostly
+StringUtils.lhs - A set of functions performing basic operations (mostly
 on ByteStrings)
 
 > module StringUtils((#),toBin,selfDelimited,rankBinary,substrings,toStrict,longStr,ordBS,toBinFixedLength) where
@@ -23,7 +23,7 @@ Order strings by length
 
 > ordBS a b = if B.length a > B.length b then GT else if a == b then EQ else LT
 
-Convert an integer to a binary string of length n. Pad zeros if necessary
+Convert an integer to a binary string of length n. Pad with zeros if necessary
 
 > binarySymbols :: Int -> Char
 > binarySymbols 0 = '0'
@@ -57,7 +57,7 @@ Binary String Ranking : See http://en.wikipedia.org/wiki/Combinatorial_number_sy
 > rankBinary' r n l (B.uncons -> Just((==W._1)->True,xs)) = if l > r then rankBinary' (r+1) (n + ((l-1) # r)) (l+1) xs else rankBinary' (r+1) n (l+1) xs
 > rankBinary' r n l (B.uncons -> Just(_,xs)) = rankBinary' r n (l+1) xs
 
-substrings : Returns all substrngs of length n of s
+substrings : Returns all substrings of length n of s
 
 > substrings :: Int -> B.ByteString -> [B.ByteString]
-> substrings n s = [ ((B.take n).(B.drop i)) s | i <- [0..(B.length s - n)]] -- Could much faster! FIXME
+> substrings n s = [ ((B.take n).(B.drop i)) s | i <- [0..(B.length s - n)]] -- Could be MUCH faster! FIXME
