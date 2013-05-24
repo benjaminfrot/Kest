@@ -27,7 +27,7 @@ Distribution : Distribution of complexities for strings of a given length
 >		let
 >			l = randomList 0 (2^strLength -1) (2^sSize)
 >			strings = fmap (map (toBinFixedLength strLength)) l
->			complexities = fmap (map (toInteger. B.length . (pEncode rDepth mT))) strings
+>			complexities = fmap (map (toInteger. B.length . (encode rDepth mT))) strings
 >		in
 >			fmap histogram complexities
 
@@ -90,4 +90,4 @@ Main function : parse arguments
 >				strs <- fmap C.lines (B.readFile fn)
 >				putStrLn $ concat $ map(\x -> x ++ "\n") (encodeList d m strs)
 >			SingleStr {inputStr = iS, maxLength = m, recursionDepth = d} -> do
->				putStrLn.C.unpack $ pEncode d m (C.pack iS) 
+>				putStrLn.C.unpack $ encode d m (C.pack iS) 
