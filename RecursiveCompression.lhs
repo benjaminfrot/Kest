@@ -6,7 +6,7 @@ This algorithm *actually* encodes strings, it is not just an estimation, encoded
 
 Decoding such a string is fast and is not implemented here as any scripting language is good enough for that.
 
-> module RecursiveCompression(encode) where
+> module RecursiveCompression(encode,pEncode) where
 
 > import StringUtils
 > import qualified Data.Word8 as W
@@ -15,6 +15,7 @@ Decoding such a string is fast and is not implemented here as any scripting lang
 > import qualified Data.ByteString.Search as S
 > import Data.List.Utils
 > import Data.List
+> import Control.Parallel.Strategies as PS
 
 
 > zeroStr :: B.ByteString
@@ -108,3 +109,16 @@ Encode : Encode_t over all possible values of t
 >		n = toInteger $ B.length s
 >		mt' = if mt < 0 then n else mt
 >		encodings = map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT 0 rDepth t mt' s)) [mt',mt'-1..1] 
+
+
+PEncode : Same as encode but parallel version
+
+> pEncode :: Integer -> Integer -> B.ByteString -> B.ByteString
+> pEncode rDepth mt s = minimumBy ordBS encodings
+>	where
+>		n = toInteger $ B.length s
+>		mt' = if mt < 0 then n else mt
+>		bs = map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT 0 rDepth t mt' s)) [mt',mt'-1..1] 
+>		encodings = bs `PS.using` PS.parList PS.rdeepseq
+
+
