@@ -10,7 +10,7 @@ Main.lhs - Entry point of the program. Parse command line options
 > import System.Console.CmdArgs
 
 Histogram : A simple function to build the histogram
-of a list (see http://langref.org/fantom+erlang+haskell/maps/algorithms/histogram(
+of a list (see http://langref.org/fantom+erlang+haskell/maps/algorithms/histogram)
 
 > histogram :: Ord a => [a] -> Map.Map a Integer
 > histogram xs = Map.fromList [ (head l, toInteger (length l)) | l <- group (sort xs) ]
@@ -34,7 +34,7 @@ Distribution : Distribution of complexities for strings of a given length
 > printDistribution :: Integer -> Map.Map Integer Integer -> String
 > printDistribution n m = (" 0.0 , " ++ show (2^n) ++ "\n") ++ concat ( map (\x -> (show (fst x)) ++ " , " ++ (show (snd x)) ++ "\n") (Map.assocs m))
 
-Get a list of strings return a list of encoded strings
+Get a list of strings; return a list of encoded strings
 
 > encodeList :: Integer -> Integer -> [B.ByteString] -> [String]
 > encodeList rDepth mT =  map (C.unpack.(encode rDepth mT)) 
