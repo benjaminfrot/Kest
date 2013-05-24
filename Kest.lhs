@@ -1,4 +1,4 @@
-Main.lhs - Entry point of the program. Parse command line options
+Kest.lhs - Entry point of the program. Parse command line options
 
 > import RecursiveCompression
 > import qualified Data.ByteString.Char8 as C
