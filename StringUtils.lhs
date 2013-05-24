@@ -1,7 +1,7 @@
 StringUtils.lhs - A set functions performing basic operations (mostly
 on ByteStrings)
 
-> module StringUtils((#),toBin,selfDelimited,rankBinary,substrings,toStrict,longStr,ordBS,toBinFixedLength) where
+> module StringUtils((#),toBin,selfDelimited,rankBinary,substrings,toStrict,ordBS,toBinFixedLength) where
 > import qualified Math.Combinatorics.Exact.Binomial as S
 > import qualified Numeric as N
 > import qualified Data.Word8 as W
@@ -13,11 +13,6 @@ Infix notation for n choose k
 
 > (#) :: Integer -> Integer -> Integer
 > (#) n k = n `S.choose` k
-
-Dirty : Strings cannont be longer than 2000
-
-> longStr :: B.ByteString
-> longStr = B.replicate 2000 W._0
 
 Order strings by length
 

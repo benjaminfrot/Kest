@@ -87,16 +87,18 @@ t
 >							r = min t (toInteger (B.length s'))
 >							encodeDeeper l = e' `B.append` encodeT (rDepth+1) mrDepth l mt s'
 >						in
->							if B.length s' == 0 then longStr
+>							if B.length s' == 0 then Nothing
 >								else -- Else try encode the left over
->									minimumBy ordBS (map encodeDeeper [r,r-1..1])
+>									Just $ minimumBy ordBS (map encodeDeeper [r,r-1..1])
 >					encodings = map encodeWithPattern patterns
 >				in
->					if t == 1 then longStr
->						else minimumBy ordBS encodings
+>					if t == 1 then Nothing
+>						else fmap (minimumBy ordBS) (sequence encodings)
 >		in
 >			case rDepth > mrDepth of
->				False -> if B.length level0 < B.length higherLevels then level0 else higherLevels
+>				False -> case higherLevels of 
+>					Nothing -> level0
+>					Just hLs -> if B.length level0 < B.length hLs then level0 else hLs
 >				_ -> level0
 
 Encode : Encode_t over all possible values of t
