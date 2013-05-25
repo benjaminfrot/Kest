@@ -36,16 +36,17 @@ Distribution : Distribution of complexities for strings of a given length
 
 Get a list of strings; return a list of encoded strings
 
-> encodeList :: Integer -> Integer -> [B.ByteString] -> [String]
-> encodeList rDepth mT =  map (C.unpack.(encode rDepth mT)) 
+> encodeList :: Bool -> Integer -> Integer -> [B.ByteString] -> [String]
+> encodeList True rDepth mT =  map (C.unpack.(encode rDepth mT)) 
+> encodeList False rDepth mT =  map (C.unpack.(encode rDepth mT).toBinaryString) 
 
 ++++++++++ Command line parsing / Help ++++++++++++++++++
 
-> summaryStr = summary "Kest V.0.4, 2013  -- benjamin.frot@dtc.ox.ac.uk"
+> summaryStr = summary "Kest V.0.5, 2013  -- benjamin.frot@dtc.ox.ac.uk"
 > data Kest = 
 >		Dist {stringLength :: Integer, maxLength :: Integer, sampleSize :: Integer, recursionDepth :: Integer}
->	 | File {maxLength :: Integer, recursionDepth :: Integer, filename :: FilePath}
->	 | SingleStr {inputStr :: String, maxLength :: Integer, recursionDepth :: Integer}
+>	 | File {maxLength :: Integer, recursionDepth :: Integer, filename :: FilePath, isBinary :: Bool}
+>	 | SingleStr {inputStr :: String, maxLength :: Integer, recursionDepth :: Integer, isBinary :: Bool}
 >	deriving (Eq,Show,Data,Typeable)
 
 > dist = Dist 
@@ -61,6 +62,7 @@ Get a list of strings; return a list of encoded strings
 >	maxLength = -1 &= mLHelp
 >	, recursionDepth = 1 &= rDHelp
 >	, filename = "./to_encode" &= fnHelp
+> , isBinary = False &= isBinaryHelp
 >	} &= help "Read a list of strings a file (one/line) and outputs the encoded strings in the same order."
 
 > single = SingleStr
@@ -68,6 +70,7 @@ Get a list of strings; return a list of encoded strings
 >	inputStr = "000000000" &= iShelp
 >	, maxLength = -1 &= mLHelp
 >	, recursionDepth = 1 &= rDHelp
+> , isBinary = False &= isBinaryHelp
 >	} &= help "Encode a single string given as parameter."
 
 > strLHelp = help "Length of the strings to sample. Default : 10"
@@ -75,7 +78,7 @@ Get a list of strings; return a list of encoded strings
 > rDHelp = help "Once a patten has been found, how many other patterns should the algorithm try to detect. -1 means no extra patterns. 0 means one extra pattern. In general, n means n + 1 extra patterns. Default 1."
 > fnHelp = help "Filename containing the list of strings to encode. Make sure there are no empty lines. Default ./to_encode"
 > iShelp = help "String to be encoded."
-
+> isBinaryHelp = help "Whether the input strings are in binary format. If not, they will automatically be encoded as binary strings. Default : False." 
 > mode = cmdArgs $ modes [dist&=auto,file,single] &= summaryStr &= help "Approximate Kolmogorov complexity by encoding binary strings. Patterns of various length are detected and the input is recursively encoded. It can be *very* time consuming, the recursion depth should be chosen small. Parallel execution is supported : add +RTS -N to use all available cores, +RTS -Nn to use n cores, e.g. ./Kest -f myStrings +RTS -N2"
 
 Main function : parse arguments 
@@ -86,8 +89,8 @@ Main function : parse arguments
 >			Dist {stringLength = n, maxLength = m, sampleSize = s, recursionDepth = d} -> do
 >				complexities <- distribution n d m s
 >				putStrLn $ printDistribution s complexities
->			File {filename = fn, maxLength = m, recursionDepth = d} -> do
+>			File {filename = fn, maxLength = m, recursionDepth = d, isBinary = isB} -> do
 >				strs <- fmap C.lines (B.readFile fn)
->				putStrLn $ concat $ map(\x -> x ++ "\n") (encodeList d m strs)
->			SingleStr {inputStr = iS, maxLength = m, recursionDepth = d} -> do
->				putStrLn.C.unpack $ pEncode d m (C.pack iS) 
+>				putStrLn $ concat $ map(\x -> x ++ "\n") (encodeList isB d m strs)
+>			SingleStr {inputStr = iS, maxLength = m, recursionDepth = d, isBinary = isB} -> do
+>				B.putStrLn $ pEncode d m (((\x -> if isB then x else toBinaryString x).C.pack) iS) 

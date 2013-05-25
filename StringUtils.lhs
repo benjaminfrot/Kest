@@ -1,13 +1,16 @@
 StringUtils.lhs - A set of functions performing basic operations (mostly
 on ByteStrings)
 
-> module StringUtils((#),toBin,selfDelimited,rankBinary,substrings,toStrict,ordBS,toBinFixedLength) where
+> module StringUtils((#),toBin,selfDelimited,rankBinary,substrings,toStrict,ordBS,toBinFixedLength,toBinaryString) where
 > import qualified Math.Combinatorics.Exact.Binomial as S
 > import qualified Numeric as N
 > import qualified Data.Word8 as W
 > import qualified Data.ByteString.Char8 as C
 > import qualified Data.ByteString.Lazy as BL
+> import qualified Data.ByteString.Internal as BI
 > import qualified Data.ByteString as B
+> import qualified Data.Set as S
+> import qualified Data.Map as M
 
 Infix notation for n choose k
 
@@ -56,3 +59,20 @@ substrings : Returns all substrings of length n of s
 
 > substrings :: Int -> B.ByteString -> [B.ByteString]
 > substrings n s = [ ((B.take n).(B.drop i)) s | i <- [0..(B.length s - n)]] -- Could be MUCH faster! FIXME
+
+
+++++ Support for non binary strings ++++
+The algorithm works only on binary strings. So we want some simple tools to turn a string over an arbitrary
+alphabet into a binary one.
+Not very advanced for now : count the number of different symbols. If the cardinal of the alphabet is k,
+then encode each symbol on log2(k) bits.
+
+> toBinaryString :: B.ByteString -> B.ByteString
+> toBinaryString s = B.foldl convertToBinary B.empty s
+>		where
+>			alphabet = S.fromList (BI.unpackBytes s)
+>			cardinality = S.size alphabet
+>			l = ceiling $ logBase 2 (fromIntegral cardinality)
+>			symbolMap = M.fromList (zip (S.toList alphabet) [1..cardinality])
+>			convertToBinary bs c = B.append bs (toBinFixedLength l (toInteger $ M.findIndex c symbolMap))
+
