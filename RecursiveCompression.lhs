@@ -28,11 +28,10 @@ Decoding such a string is fast and is not implemented here as any scripting lang
 > bStr = B.pack [W._B]
 
 `encodeBinary` encodes a binary string in a pretty straightforward way :
-	- It counts the number of zeros and ones in the string.
-	- If there are less zeros than ones, then the first bit of encoded string is set to 0, otherwise it is set to 1
-	- The number of zeros or ones (depending whether #zeros < #ones) is then appended to the encoding.
-	- Finally, the rank of this binary string among the set of all binary strings of this length for that many 1s added 
-(see StringUtils.lhs for the implementation, function `rankBinary`).
+- It counts the number of zeros and ones in the string.
+- If there are less zeros than ones, then the first bit of encoded string is set to 0, otherwise it is set to 1
+- The number of zeros or ones (depending whether #zeros < #ones) is then appended to the encoding.
+- Finally, the rank of this binary string among the set of all binary strings of this length for that many 1s added (see StringUtils.lhs for the implementation, function `rankBinary`).
 
 NOTE : The length of the string is not encoded, this is done outside this function, and only if necessary.
 
@@ -65,14 +64,14 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >			e = encodeBinary s'
 
 `encodeT` is the most important function for algorithm. Here is an idea of how it works:
-	- Take an integer *t* and a string *s* (of length *n*, say). 
-	- Find all the substrings of length *t* of *s* (there are *n-t* such substrings).
-	- For any possible substring *ss*, Use `encodeNAry` to encode the positions of the occurences of *ss* in *s*.
-	- Cut *ss* out of *s* so that we end up with a shorter string *s'*. 
-	- There are two solutions : 
-		- a) encode *s'* as simple binary string using `encodeBinary`
-		- b) repeat the same operation on *s'*, trying all possible values of *t*.
-	- Return the best encoding, *i.e.* the shortest one.
+- Take an integer *t* and a string *s* (of length *n*, say). 
+- Find all the substrings of length *t* of *s* (there are *n-t* such substrings).
+- For any possible substring *ss*, Use `encodeNAry` to encode the positions of the occurences of *ss* in *s*.
+- Cut *ss* out of *s* so that we end up with a shorter string *s'*. 
+- There are two solutions : 
+	a) encode *s'* as simple binary string using `encodeBinary`
+	;  b) repeat the same operation on *s'*, trying all possible values of *t*.
+- Return the best encoding, *i.e.* the shortest one.
 
 > encodeT :: Integer -> Integer -> Integer -> Integer -> B.ByteString -> B.ByteString
 > encodeT rDepth mrDepth t mt s = 
