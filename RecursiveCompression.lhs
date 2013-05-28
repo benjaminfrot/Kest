@@ -1,4 +1,4 @@
-RecursiveCompression.lhs - A Haskell
+*RecursiveCompression.lhs* - A Haskell
 implementation of a 'compression' algorithm used to estimate 
 Kolmogorov Complexity.
 
@@ -27,10 +27,14 @@ Decoding such a string is fast and is not implemented here as any scripting lang
 > bStr :: B.ByteString
 > bStr = B.pack [W._B]
 
-Simple encoding of a binary string
-NOTE : It cannot be used on its own, one would need to encode the
-length as well. Here, only the number of zeros or ones is encoded and
-the rank of the string.
+`encodeBinary` encodes a binary string in a pretty straightforward way :
+	- It counts the number of zeros and ones in the string.
+	- If there are less zeros than ones, then the first bit of encoded string is set to 0, otherwise it is set to 1
+	- The number of zeros or ones (depending whether #zeros < #ones) is then appended to the encoding.
+	- Finally, the rank of this binary string among the set of all binary strings of this length for that many 1s added 
+(see StringUtils.lhs for the implementation, function `rankBinary`).
+
+NOTE : The length of the string is not encoded, this is done outside this function, and only if necessary.
 
 > encodeBinary :: B.ByteString -> B.ByteString
 > encodeBinary s = symCount `B.append` selfDelimited (toBin $ rankBinary s)
@@ -39,7 +43,10 @@ the rank of the string.
 >			nZeros = toInteger (B.count W._0 s)
 >			nOnes = (toInteger $ B.length s ) - nZeros
 
-EncodeNAry : Encode strings with more than two symbols.
+
+`encodeNAry` is a function that takes a "pattern", *p* say, and a string *s*. All the occurences of *p* in *s* are replaced
+by ones. The other bits of the string are replaced by zeros. This gives a binary string which can be encoded using `encodeBinary`.
+The Boolean *b* given as parameter is here only tell whether the algorithm reached the bottom of the recursion stack or not.
  
 > encodeNAry :: Bool -> B.ByteString -> B.ByteString -> B.ByteString
 > encodeNAry b p s = 
@@ -57,8 +64,15 @@ EncodeNAry : Encode strings with more than two symbols.
 >			s' = toStrict $ S.replace bStr oneStr (toStrict $ S.replace  oneStr zeroStr (toStrict $ S.replace p bStr s))
 >			e = encodeBinary s'
 
-encodeT : Encode a string, starting by looking at patterns of length 
-t 
+`encodeT` is the most important function for algorithm. Here is an idea of how it works:
+	- Take an integer *t* and a string *s* (of length *n*, say). 
+	- Find all the substrings of length *t* of *s* (there are *n-t* such substrings).
+	- For any possible substring *ss*, Use `encodeNAry` to encode the positions of the occurences of *ss* in *s*.
+	- Cut *ss* out of *s* so that we end up with a shorter string *s'*. 
+	- There are two solutions : 
+		- a) encode *s'* as simple binary string using `encodeBinary`
+		- b) repeat the same operation on *s'*, trying all possible values of *t*.
+	- Return the best encoding, *i.e.* the shortest one.
 
 > encodeT :: Integer -> Integer -> Integer -> Integer -> B.ByteString -> B.ByteString
 > encodeT rDepth mrDepth t mt s = 
@@ -88,7 +102,7 @@ t
 >							encodeDeeper l = e' `B.append` encodeT (rDepth+1) mrDepth l mt s'
 >						in
 >							if B.length s' == 0 then Nothing
->								else -- Else try encode the left over
+>								else -- Else try to encode the left over
 >									Just $ minimumBy ordBS (map encodeDeeper [r,r-1..1])
 >					encodings = map encodeWithPattern patterns
 >				in
@@ -101,7 +115,7 @@ t
 >					Just hLs -> if B.length level0 < B.length hLs then level0 else hLs
 >				_ -> level0
 
-Encode : Encode_t over all possible values of t
+`encode` : call `encodeT` trying all possible values of *t*, keep the best.  
 
 > encode :: Integer -> Integer -> B.ByteString -> B.ByteString
 > encode rDepth mt s = minimumBy ordBS encodings
@@ -111,7 +125,7 @@ Encode : Encode_t over all possible values of t
 >		encodings = map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT 0 rDepth t mt' s)) [mt',mt'-1..1] 
 
 
-PEncode : Same as encode but parallel version
+`pEncode` : same as `encode` but in parallel. Different values of *t* are tested at the same time.
 
 > pEncode :: Integer -> Integer -> B.ByteString -> B.ByteString
 > pEncode rDepth mt s = minimumBy ordBS encodings
@@ -120,5 +134,3 @@ PEncode : Same as encode but parallel version
 >		mt' = if mt < 0 then n else mt
 >		bs = map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT 0 rDepth t mt' s)) [mt',mt'-1..1] 
 >		encodings = bs `PS.using` PS.parList PS.rdeepseq
-
-
