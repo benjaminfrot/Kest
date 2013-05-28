@@ -1,0 +1,4 @@
+BUILD :
+make
+
+Makefile taken from : https://code.google.com/p/latex-makefile/

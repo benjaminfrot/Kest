@@ -1,0 +1,115 @@
+\documentclass[12pt]{amsart}
+
+\usepackage{amsmath} 
+\usepackage{amssymb} 
+\usepackage{amsthm}
+\usepackage{amsbsy}
+\usepackage{fullpage}
+\usepackage[utf8]{inputenc}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+%%% For commutative diagrams
+\usepackage{tikz}
+\usepackage[all]{xy}
+\usetikzlibrary{matrix,arrows}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage[unicode=true,
+colorlinks=true,
+urlcolor=blue,
+anchorcolor=blue,
+linkcolor=blue,
+citecolor=blue]{hyperref}
+
+
+\newif\ifFrench
+\Frenchfalse  %%%%%%%%%%%%%% Change language here
+
+\ifFrench
+\usepackage[frenchb]{babel} %Removing turns ``Demonstration'' into ``Proof''  in the proof env.
+\newtheorem{theorem}{Théorème}
+\newtheorem{lemma}[theorem]{Lemme}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollaire}
+\newtheorem{theodef}[theorem]{Théorème and Définition}
+\newtheorem{thesis}[theorem]{Thèse}
+\theoremstyle{definition}
+\newtheorem{definition}{Définition}
+\newtheorem{example}{Exemple}
+\theoremstyle{remark}
+\newtheorem*{remark}{Remarque}
+\newtheorem*{notation}{Notation}
+
+\else
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollaire}
+\newtheorem{theodef}[theorem]{Theoreme and Definition}
+\newtheorem{thesis}[theorem]{Thesis}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{example}{Example}
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+\newtheorem*{notation}{Notation}
+\fi
+
+\title{$K_{est}$ : A Brief Summary}
+\author{}
+\date{}
+
+\begin{document}
+
+	\maketitle
+
+	The goal of these few pages is to give an overview of the algorithm implemented in $RecursiveCompression.lhs$ and which at the core
+	of $K_{est}$. By the time he/she reaches the end this document, the reader will hopefully be able to write the same algorithm (or a better one) in a programming 
+	language of his/her choice. This should also provide an insight on why it performs the way it does compared to Lempel-Ziv \cite{LZ},
+	what is the exact meaning of the parameters, etc\dots
+
+	\section*{Preliminaries}
+
+		In order to avoid overloading the next section, a few notations and reminders are given here.
+
+		In the rest of this document, $\Sigma = \{0,1\}$ is an alphabet over two symbols, here $0$ and $1$. $s \in \Sigma^n$ is a binary string
+		of length $n$ and $s_i,~1 \leq i \leq n$ is the $i^th$ symbol $s$. $s_i$ can equivalently be seen as a symbol ($i.e.$ an element
+		of $\Sigma$) or as a string of length $1$. We will use $a \cdot b$ to denote concatenation of two strings, even if $a$, $b$ or both 
+		are symbols, thus abstracting away from the more constrictive framework of type theory. $length : \Sigma^\ast \to \mathbb{N}$ is
+		the obvious length function and $\preceq$ is a total order relation on
+		$\Sigma^\ast$ defined by
+		\[ s_1 \preceq s_2 \Leftrightarrow length(a) \leq length(b).\]
+		
+		Moreover, recall that there are ${n \choose k}$ binary strings $s \in \Sigma^n$ with $k$ ones. The bijections between
+		the set of such strings and $\{1\dots {n \choose k}\}$ are called \emph{ranking} functions. The inverse operation is called
+		\emph{unranking} and both can be implemented in an efficient way. All ranking functions are identical up to 
+		isomorphism and, since it does not matter which one we choose, from now on \texttt{rank(s)} will designate some fixed ranking function.
+
+		Finally, $s_{i:j}$ is the shorthand notations
+		for the string $s_i \cdot s_{i+1} \cdot \dots \cdot s_{j}$ whenever $1 \leq i \leq j \leq n$.
+
+		\section*{Algorithm}
+
+		\begin{algorithm}
+			\caption{An algorithm to estimate the prefix-free Kolmogorov complexity of binary strings.}
+			\begin{algorithmic}
+				\Procedure{encode}{$s,mt$}\Comment{Encode a string $s$, looking for patterns of length $\leq mt$}
+					\State encodedStrings = \{\} \Comment{An empty list}
+					\For {$t=0$ to $mt$}
+						\State $e \gets$ encodeT($s,t,mt$) 
+						\State Add $e$ to encodedStrings
+					\EndFor
+					\State \textbf{return} min(encodedStrings) \Comment{Return the shortest string according to $\preceq$.}
+				\EndProcedure
+
+				\Function{encodeT}{$s,t,mt$}
+				\State patterns $\gets$ the list $\{s_1 \cdot s_2 \dots \cdot s_t, s_2 \cdot \dots \cdot s_{t+1},\dots,s_{n-t} \cdot \dots \cdot s_n \}$.					
+				\EndFunction
+			\end{algorithmic}
+		\end{algorithm}
+
+	\bibliographystyle{alpha}
+	\bibliography{bibliography}
+
+\end{document}
