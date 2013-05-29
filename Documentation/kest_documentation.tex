@@ -8,7 +8,6 @@
 \usepackage[utf8]{inputenc}
 \usepackage{algpseudocode}
 \usepackage{algorithm}
-\usepackage{algo}
 
 %%% For commutative diagrams
 \usepackage{tikz}
@@ -65,7 +64,7 @@ citecolor=blue]{hyperref}
 
 	\maketitle
 
-	The goal of these few pages is to give an overview of the algorithm implemented in $RecursiveCompression.lhs$ and which at the core
+	The goal of these few pages is to give an overview of the algorithm implemented in $RecursiveCompression.lhs$ and which is at the core
 	of $K_{est}$. By the time he/she reaches the end this document, the reader will hopefully be able to write the same algorithm (or a better one) in a programming 
 	language of his/her choice. This should also provide an insight on why it performs the way it does compared to Lempel-Ziv \cite{LZ},
 	what is the exact meaning of the parameters, etc\dots
@@ -76,10 +75,10 @@ citecolor=blue]{hyperref}
 	\subsection*{Notations}
 
 		In the rest of this document, $\Sigma = \{0,1\}$ is an alphabet over two symbols, here $0$ and $1$. $s \in \Sigma^n$ is a binary string
-		of length $n$ and $s_i,~1 \leq i \leq n$ is the $i^th$ symbol $s$. $s_i$ can equivalently be seen as a symbol ($i.e.$ an element
+		of length $n$ and $s_i,~1 \leq i \leq n$ is the $i^{th}$ symbol of $s$. $s_i$ can equivalently be seen as a symbol ($i.e.$ an element
 		of $\Sigma$) or as a string of length $1$. We will use $a \cdot b$ to denote concatenation of two strings, even if $a$, $b$ or both 
 		are symbols, thus abstracting away from the more constrictive framework of type theory. $length : \Sigma^\ast \to \mathbb{N}$ is
-		the obvious length function and $\preceq$ is a total order relation on
+		the usual length function and $\preceq$ is a total order relation on
 		$\Sigma^\ast$ defined by
 		\[ s_1 \preceq s_2 \Leftrightarrow length(a) \leq length(b).\]
 		
@@ -96,21 +95,17 @@ citecolor=blue]{hyperref}
 			The following section makes use of a few simple functions that are not directly related to the algorithm and are defined here. 
 
 			\begin{itemize}
-				\item selfEncode : Because we aim at estimating the prefix free complexity, strings but be self-delimited. This is a achieved using a
+				\item \texttt{selfEncode} : Because we aim at estimating the prefix free complexity, strings must be self-delimited. This is a achieved using a
 					fairly naive method. If $s$ is a string of length $n$, then call $l$ the binary representation of its length. Then, encode $l$, of length
-					$m$ using $2m$ bits by prepending a string length $m$ of the form $00 \dots 0 \cdot 1$ to $l$. $0$ can be interpreted as ``keep reading''
-					and $1$ as ``stop''. This tells the decoded that the length of message is encoded in the $m$ following bits. For the pseudo-code see \ref{function1}
-				\item encodeBinary : As stated above, any string of length $n$ with $k$ ones can be ranked. Once one knows $n, k$ and the rank then the string
-					can uniquely identified. This is what the encodeBinary function does. It encodes the number of ones or zeros (depending on which one is smaller) and the rank of the string. See \ref{function2} for the pseudo-code.
-				\item encodeNAry : This function takes a string and a pattern (a substring of s) and replaces all the occurences of $p$ in $s$ by ones. All the
-					other symbols are replaced by zeros. The pattern is encoded in a self-delimited fashion and preprended to the encoding of the string with the patterns cut out, as computed by encodeBinary. See \ref{function3} for the pseudo-code.
+					$m$ using $2m$ bits by prepending a string of length $m$ of the form $00 \dots 0 \cdot 1$ to $l$. $0$ can be interpreted as ``keep reading''
+					and $1$ as ``stop''. This tells the decoder that the length of the message is encoded in the $m$ following bits. For the pseudo-code see Function 1 
+				\item \texttt{encodeBinary} : As stated above, any string of length $n$ with $k$ ones can be ranked. Once one knows $n, k$ and the rank then the string
+					can be uniquely identified. This is what the encodeBinary function does. It encodes the number of ones or zeros (depending on which one is smaller) and the rank of the string. See Function 2 for the pseudo-code.
+				\item \texttt{encodeNAry} : This function takes a string and a pattern (a substring of $s$) and replaces all the occurrences of $p$ in $s$ by ones. All the
+					other symbols are replaced by zeros. The pattern is encoded in a self-delimited fashion and prepended to the encoding of the string with the patterns cut out, as computed by \texttt{encodeBinary}. See Function 3 for the pseudo-code.
 			\end{itemize}
 
-			\begin{algorithm}{Function 1 : selfEncode}{
-				\label{function1}
-				\qinput{$s$ : An element of $\Sigma^n$}
-				\qoutput{$e$ : The encoded representation of $s$}
-				\qcomment{A function encoding a binary string in a self-delimited fashion using $2 log_2(log_2(n) ) + n$ bits.}}
+			\begin{algorithm}{Function 1 : selfEncode}
 			\begin{algorithmic}
 				\Function{selfEncode}{$s$}
 					\State $ e \gets \epsilon$ \Comment{An empty string}
@@ -121,11 +116,7 @@ citecolor=blue]{hyperref}
 			\end{algorithmic}
 		\end{algorithm}
 	
-		\begin{algorithm}{Function 2 : encodeBinary}{
-			\label{function2}
-			\qinput{$s$ : An element of $\Sigma^n$}
-			\qoutput{$e$ : The encoded representation of $s$}
-			\qcomment{A function encoding a binary string by encoding its rank in the set of all strings with the same length and the same number of ones.}}
+		\begin{algorithm}{Function 2 : encodeBinary}
 			\begin{algorithmic}
 				\Function{encodeBinary}{$s$}
 					\State $e \gets \epsilon$ \Comment{An empty string}
@@ -144,11 +135,7 @@ citecolor=blue]{hyperref}
 			\end{algorithmic}
 		\end{algorithm}
 
-		\begin{algorithm}{Function 3 : encodeBinary}{
-			\label{function3}
-			\qinput{$s$ : An element of $\Sigma^n$, $p$ an element of $\Sigma^k, k \leq n$}
-			\qoutput{$e$ : The encoded representation of $s$}
-			\qcomment{A function encoding the positions of the occurences of a given pattern in a string.}}
+		\begin{algorithm}{Function 3 : encodeNAry}
 			\begin{algorithmic}
 				\Function{encodeNAry}{$b,p,s$} \Comment{$b$ is a boolean,$p$ is string, the ``pattern'' and $s$ is the original string.}
 					\State $e \gets \epsilon$ \Comment{An empty string}
@@ -158,7 +145,7 @@ citecolor=blue]{hyperref}
 						\State $e \gets e \cdot 0$
 					\EndIf
 					\State $e \gets e \cdot $ selfEncode($p$) \Comment{Encode the pattern in a self-delimited way.}
-					\State $s' \gets $ $s$ in which all occurences of $p$ are replaced by $1$ and all the other symbols are replaced by $0$. 
+					\State $s' \gets $ $s$ in which all occurrences of $p$ are replaced by $1$ and all the other symbols are replaced by $0$. 
 					\State $e \gets e \cdot $ encodeBinary($s'$)
 					\State \textbf{Return} $e$
 				\EndFunction
@@ -168,8 +155,23 @@ citecolor=blue]{hyperref}
 
 		\section*{Algorithm}
 
+			This algorithm estimates the Kolmogorov complexity by searching for patterns in strings. This is done recursively, until no interesting pattern
+			can be detected. This paragraph will focus on an intuitive description of the algorithm. For the pseudo-code see Algorithm \ref{algo}.
+
+			Here is the work flow :
+			\begin{enumerate}
+				\item Take a string $s$ of length $n$.
+				\item For a given value of $t \leq n$, enumerate all substrings of length $t$ of $s$. There are $n-t$ such strings. We will call such substrings
+					\emph{patterns}.
+				\item For a given pattern $p$, replace all occurrences of $p$ in $s$ by ones and all the other symbols by zeros. This gives a simpler binary string that can be encoded using the encodeBinary function. 
+				\item Cut out all the occurrences of $p$ in $s$. This gives a shorter string $s'$ that can itself be encoded using the same algorithm.
+				\item Do this for all patterns $p$ and all allowed values of $t$.
+				\item Return the shortest encoding.
+			\end{enumerate}
+
 		\begin{algorithm}
 			\caption{An algorithm to estimate the prefix-free Kolmogorov complexity of a binary string.}
+			\label{algo}
 			\begin{algorithmic}
 				\Procedure{encode}{$s,mt$}\Comment{Encode a string $s$, looking for patterns of length $\leq mt$}
 					\State encodedStrings = \{\} \Comment{An empty list}
@@ -181,14 +183,15 @@ citecolor=blue]{hyperref}
 				\EndProcedure
 
 				\Function{encodeT}{$s,t$}
-				\State patterns $\gets$ the list $\{s_1 \cdot s_2 \dots \cdot s_t, s_2 \cdot \dots \cdot s_{t+1},\dots,s_{n-t} \cdot \dots \cdot s_n \}$.								 \State $best \gets 0 \times 2000$ \Comment{A very long string}
+				\State patterns $\gets$ the list $\{s_{1:t}, s_{2:(t+1)}, \dots , s_{(n-t):n} \}$.
+				\State $best \gets 0 \times 2000$ \Comment{A very long string}
 				\For {$p$ in patterns} \Comment{First half : Detect only one pattern.}
 					\If {$t$ is $1$} \Comment(The pattern is not really a pattern, it is just one symbol)
 						\State $e \gets 1 \cdot $ selfDelimited($p$) $ \cdot $ encodeBinary($s$)
 						\State If $e \preceq best$ then $best \gets e$. 
 						\Else \Comment{This is a proper pattern of length $2$ or more.}
 							\State $e \gets $ EncodeNAry(True,$p$,$s$)
-							\State $s' \gets $ $s$ with all the occurences of $p$ replaced by the empty string.
+							\State $s' \gets $ $s$ with all the occurrences of $p$ replaced by the empty string.
 							\If {$s'$ is $\epsilon$}
 								\State If $e \preceq best$ then $best \gets e$. 
 							\Else
@@ -199,7 +202,7 @@ citecolor=blue]{hyperref}
 				\EndFor
 				\For {$p$ in patterns}
 					\State $e \gets $ encodeNAry(False,$p$,$s$)
-					\State $s' \gets $ $s$ with all the occurences of $p$ replaced by the empty string.
+					\State $s' \gets $ $s$ with all the occurrences of $p$ replaced by the empty string.
 					\If {$s'$ is $\epsilon$}
 					\State \textbf{Continue}
 					\Else
