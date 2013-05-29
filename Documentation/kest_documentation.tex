@@ -8,6 +8,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{algpseudocode}
 \usepackage{algorithm}
+\usepackage{algo}
 
 %%% For commutative diagrams
 \usepackage{tikz}
@@ -71,7 +72,8 @@ citecolor=blue]{hyperref}
 
 	\section*{Preliminaries}
 
-		In order to avoid overloading the next section, a few notations and reminders are given here.
+
+	\subsection*{Notations}
 
 		In the rest of this document, $\Sigma = \{0,1\}$ is an alphabet over two symbols, here $0$ and $1$. $s \in \Sigma^n$ is a binary string
 		of length $n$ and $s_i,~1 \leq i \leq n$ is the $i^th$ symbol $s$. $s_i$ can equivalently be seen as a symbol ($i.e.$ an element
@@ -84,27 +86,130 @@ citecolor=blue]{hyperref}
 		Moreover, recall that there are ${n \choose k}$ binary strings $s \in \Sigma^n$ with $k$ ones. The bijections between
 		the set of such strings and $\{1\dots {n \choose k}\}$ are called \emph{ranking} functions. The inverse operation is called
 		\emph{unranking} and both can be implemented in an efficient way. All ranking functions are identical up to 
-		isomorphism and, since it does not matter which one we choose, from now on \texttt{rank(s)} will designate some fixed ranking function.
+		isomorphism and, since it does not matter which one we choose, from now on \texttt{rank(s)} will designate some ranking function, fixed once and for all.
 
-		Finally, $s_{i:j}$ is the shorthand notations
+		Finally, $s_{i:j}$ is the shorthand notation
 		for the string $s_i \cdot s_{i+1} \cdot \dots \cdot s_{j}$ whenever $1 \leq i \leq j \leq n$.
+
+		\subsection*{A few definitions}
+
+			The following section makes use of a few simple functions that are not directly related to the algorithm and are defined here. 
+
+			\begin{itemize}
+				\item selfEncode : Because we aim at estimating the prefix free complexity, strings but be self-delimited. This is a achieved using a
+					fairly naive method. If $s$ is a string of length $n$, then call $l$ the binary representation of its length. Then, encode $l$, of length
+					$m$ using $2m$ bits by prepending a string length $m$ of the form $00 \dots 0 \cdot 1$ to $l$. $0$ can be interpreted as ``keep reading''
+					and $1$ as ``stop''. This tells the decoded that the length of message is encoded in the $m$ following bits. For the pseudo-code see \ref{function1}
+				\item encodeBinary : As stated above, any string of length $n$ with $k$ ones can be ranked. Once one knows $n, k$ and the rank then the string
+					can uniquely identified. This is what the encodeBinary function does. It encodes the number of ones or zeros (depending on which one is smaller) and the rank of the string. See \ref{function2} for the pseudo-code.
+				\item encodeNAry : This function takes a string and a pattern (a substring of s) and replaces all the occurences of $p$ in $s$ by ones. All the
+					other symbols are replaced by zeros. The pattern is encoded in a self-delimited fashion and preprended to the encoding of the string with the patterns cut out, as computed by encodeBinary. See \ref{function3} for the pseudo-code.
+			\end{itemize}
+
+			\begin{algorithm}{Function 1 : selfEncode}{
+				\label{function1}
+				\qinput{$s$ : An element of $\Sigma^n$}
+				\qoutput{$e$ : The encoded representation of $s$}
+				\qcomment{A function encoding a binary string in a self-delimited fashion using $2 log_2(log_2(n) ) + n$ bits.}}
+			\begin{algorithmic}
+				\Function{selfEncode}{$s$}
+					\State $ e \gets \epsilon$ \Comment{An empty string}
+					\State $ l \gets $ BIN($length(s) - 1$) \Comment{BIN is a function sending a number in base $10$ to its representation in base $2$}. 
+					\State $ e \gets e \cdot ((length(l) - 1) \times 0) \cdot 1 \cdot l \cdot s$
+					\State \textbf{Return} $e$
+				\EndFunction
+			\end{algorithmic}
+		\end{algorithm}
+	
+		\begin{algorithm}{Function 2 : encodeBinary}{
+			\label{function2}
+			\qinput{$s$ : An element of $\Sigma^n$}
+			\qoutput{$e$ : The encoded representation of $s$}
+			\qcomment{A function encoding a binary string by encoding its rank in the set of all strings with the same length and the same number of ones.}}
+			\begin{algorithmic}
+				\Function{encodeBinary}{$s$}
+					\State $e \gets \epsilon$ \Comment{An empty string}
+					\State nZeros $\gets $ number of zeros in $s$
+					\State nOnes $\gets$ number of ones in $s$
+					\If{ nZeros $\leq$ nOnes}
+						\State $e \gets e \cdot 0$
+						\State $e \gets e \cdot $ selfEncode(BIN(nZeros) ) \Comment{Where BIN is a function sending a number in base $10$ to its representation in base $2$}
+					\Else
+						\State $e \gets e \cdot 1$
+						\State $e \gets e \cdot $ selfEncode(BIN(nOnes) )
+					\EndIf
+					\State $e \gets e \cdot $ rank(s)
+					\State \textbf{Return} $e$
+				\EndFunction
+			\end{algorithmic}
+		\end{algorithm}
+
+		\begin{algorithm}{Function 3 : encodeBinary}{
+			\label{function3}
+			\qinput{$s$ : An element of $\Sigma^n$, $p$ an element of $\Sigma^k, k \leq n$}
+			\qoutput{$e$ : The encoded representation of $s$}
+			\qcomment{A function encoding the positions of the occurences of a given pattern in a string.}}
+			\begin{algorithmic}
+				\Function{encodeNAry}{$b,p,s$} \Comment{$b$ is a boolean,$p$ is string, the ``pattern'' and $s$ is the original string.}
+					\State $e \gets \epsilon$ \Comment{An empty string}
+					\If{$b$ is True}
+						\State $e \gets e \cdot 1$
+					\Else
+						\State $e \gets e \cdot 0$
+					\EndIf
+					\State $e \gets e \cdot $ selfEncode($p$) \Comment{Encode the pattern in a self-delimited way.}
+					\State $s' \gets $ $s$ in which all occurences of $p$ are replaced by $1$ and all the other symbols are replaced by $0$. 
+					\State $e \gets e \cdot $ encodeBinary($s'$)
+					\State \textbf{Return} $e$
+				\EndFunction
+			\end{algorithmic}
+		\end{algorithm}
+	
 
 		\section*{Algorithm}
 
 		\begin{algorithm}
-			\caption{An algorithm to estimate the prefix-free Kolmogorov complexity of binary strings.}
+			\caption{An algorithm to estimate the prefix-free Kolmogorov complexity of a binary string.}
 			\begin{algorithmic}
 				\Procedure{encode}{$s,mt$}\Comment{Encode a string $s$, looking for patterns of length $\leq mt$}
 					\State encodedStrings = \{\} \Comment{An empty list}
-					\For {$t=0$ to $mt$}
-						\State $e \gets$ encodeT($s,t,mt$) 
+					\For {$t=0 \to mt$}
+						\State $e \gets$ encodeT($s,t$) 
 						\State Add $e$ to encodedStrings
 					\EndFor
 					\State \textbf{return} min(encodedStrings) \Comment{Return the shortest string according to $\preceq$.}
 				\EndProcedure
 
-				\Function{encodeT}{$s,t,mt$}
-				\State patterns $\gets$ the list $\{s_1 \cdot s_2 \dots \cdot s_t, s_2 \cdot \dots \cdot s_{t+1},\dots,s_{n-t} \cdot \dots \cdot s_n \}$.					
+				\Function{encodeT}{$s,t$}
+				\State patterns $\gets$ the list $\{s_1 \cdot s_2 \dots \cdot s_t, s_2 \cdot \dots \cdot s_{t+1},\dots,s_{n-t} \cdot \dots \cdot s_n \}$.								 \State $best \gets 0 \times 2000$ \Comment{A very long string}
+				\For {$p$ in patterns} \Comment{First half : Detect only one pattern.}
+					\If {$t$ is $1$} \Comment(The pattern is not really a pattern, it is just one symbol)
+						\State $e \gets 1 \cdot $ selfDelimited($p$) $ \cdot $ encodeBinary($s$)
+						\State If $e \preceq best$ then $best \gets e$. 
+						\Else \Comment{This is a proper pattern of length $2$ or more.}
+							\State $e \gets $ EncodeNAry(True,$p$,$s$)
+							\State $s' \gets $ $s$ with all the occurences of $p$ replaced by the empty string.
+							\If {$s'$ is $\epsilon$}
+								\State If $e \preceq best$ then $best \gets e$. 
+							\Else
+								\State $e \gets e \cdot $ encodeBinary($s'$)
+								\State If $e \preceq best$ then $best \gets e$. 
+							\EndIf
+					\EndIf
+				\EndFor
+				\For {$p$ in patterns}
+					\State $e \gets $ encodeNAry(False,$p$,$s$)
+					\State $s' \gets $ $s$ with all the occurences of $p$ replaced by the empty string.
+					\If {$s'$ is $\epsilon$}
+					\State \textbf{Continue}
+					\Else
+					\For {$i = 1 \to min(t,length(s'))$} 
+						\State $e' = e \cdot $ encodeT($s',i$)
+						\State If $e' \preceq best$ then $best \gets e'$. 
+					\EndFor
+					\EndIf
+				\EndFor
+				\textbf{Return} $best$
 				\EndFunction
 			\end{algorithmic}
 		\end{algorithm}
