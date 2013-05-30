@@ -47,21 +47,22 @@ NOTE : The length of the string is not encoded, this is done outside this functi
 by ones. The other bits of the string are replaced by zeros. This gives a binary string which can be encoded using `encodeBinary`.
 The Boolean *b* given as parameter is here only tell whether the algorithm reached the bottom of the recursion stack or not.
  
-> encodeNAry :: Bool -> B.ByteString -> B.ByteString -> B.ByteString
-> encodeNAry b p s = 
+> encodeNAry :: Integer -> Integer -> Integer -> Bool -> B.ByteString -> B.ByteString -> B.ByteString
+> encodeNAry leftRDepth maxLRDepth maxRRDepth b p s = 
 >		let
 >			encP = selfDelimited p
->			e = encodeNAry' p s
+>			e = encodeNAry' leftRDepth maxLRDepth maxRRDepth p s
 >		in
 >			case b of 
 > 			True -> B.cons W._1 encP `B.append` e
 > 			False -> B.cons W._0 encP `B.append` e
 
-> encodeNAry' :: B.ByteString -> B.ByteString -> B.ByteString
-> encodeNAry' p s = e
+> encodeNAry' :: Integer -> Integer -> Integer -> B.ByteString -> B.ByteString -> B.ByteString
+> encodeNAry' leftRDepth maxLRDepth maxRRDepth p s = e
 > 	where 
 >			s' = toStrict $ S.replace bStr oneStr (toStrict $ S.replace  oneStr zeroStr (toStrict $ S.replace p bStr s))
->			e = encodeBinary s'
+>			--e = encodeBinary s'
+>			e = encode (leftRDepth + 1) maxLRDepth maxRRDepth (toInteger $ B.length s') s'
 
 `encodeT` is the most important function for algorithm. Here is an idea of how it works:
 - Take an integer *t* and a string *s* (of length *n*, say). 
@@ -73,8 +74,8 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 	;  b) repeat the same operation on *s'*, trying all possible values of *t*.
 - Return the best encoding, *i.e.* the shortest one.
 
-> encodeT :: Integer -> Integer -> Integer -> Integer -> B.ByteString -> B.ByteString
-> encodeT rDepth mrDepth t mt s = 
+> encodeT :: Integer -> Integer -> Integer -> Integer -> Integer -> Integer -> B.ByteString -> B.ByteString
+> encodeT leftRDepth maxLRDepth rightRDepth maxRRDepth t mt s = 
 >		let 
 >			patterns = nub (substrings (fromIntegral t) s)
 >			level0 = 
@@ -84,7 +85,7 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >							B.cons W._1 (selfDelimited p) `B.append` encodeBinary s
 >						else -- The pattern is a proper substring
 >							let
->								e' = encodeNAry True p s
+>								e' = encodeNAry leftRDepth maxLRDepth maxRRDepth True p s
 >								s' = toStrict $ S.replace p B.empty s
 >							in
 >								if B.length s' == 0 then e' else e' `B.append` encodeBinary s'
@@ -95,10 +96,10 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >				let
 >					encodeWithPattern p =
 >						let
->							e' = encodeNAry False p s
+>							e' = encodeNAry leftRDepth maxLRDepth maxRRDepth False p s
 >							s' = toStrict $ S.replace p B.empty s
 >							r = min t (toInteger (B.length s'))
->							encodeDeeper l = e' `B.append` encodeT (rDepth+1) mrDepth l mt s'
+>							encodeDeeper l = e' `B.append` encodeT leftRDepth maxLRDepth (rightRDepth+1) maxRRDepth l mt s'
 >						in
 >							if B.length s' == 0 then Nothing
 >								else -- Else try to encode the left over
@@ -108,7 +109,7 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >					if t == 1 then Nothing
 >						else fmap (minimumBy ordBS) (sequence encodings)
 >		in
->			case rDepth > mrDepth of
+>			case rightRDepth >= maxRRDepth of
 >				False -> case higherLevels of 
 >					Nothing -> level0
 >					Just hLs -> if B.length level0 < B.length hLs then level0 else hLs
@@ -116,20 +117,38 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 
 `encode` : call `encodeT` trying all possible values of *t*, keep the best.  
 
-> encode :: Integer -> Integer -> B.ByteString -> B.ByteString
-> encode rDepth mt s = minimumBy ordBS encodings
+> encode :: Integer -> Integer -> Integer -> Integer -> B.ByteString -> B.ByteString
+> encode leftRDepth maxLRDepth maxRRDepth mt s = minimumBy ordBS encodings
 >	where
 >		n = toInteger $ B.length s
 >		mt' = if mt < 0 then n else mt
->		encodings = map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT 0 rDepth t mt' s)) [mt',mt'-1..1] 
-
+>		simple = [B.cons W._0 $ encodeBinary s]
+>		encodings = if leftRDepth >= maxLRDepth 
+>			then
+>				simple
+>			else 
+>				if leftRDepth == 0 
+>					then
+>						map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT leftRDepth maxLRDepth 0 maxRRDepth t mt' s)) [mt',mt'-1..1] 
+>					else
+>						simple ++ map (\t -> (B.cons W._1 $ selfDelimited(toBin (n-t)) `B.append` encodeT leftRDepth maxLRDepth 0 maxRRDepth t mt' s)) [mt',mt'-1..1]
 
 `pEncode` : same as `encode` but in parallel. Different values of *t* are tested at the same time.
 
-> pEncode :: Integer -> Integer -> B.ByteString -> B.ByteString
-> pEncode rDepth mt s = minimumBy ordBS encodings
+> pEncode :: Integer -> Integer -> Integer -> Integer -> B.ByteString -> B.ByteString
+> pEncode leftRDepth maxLRDepth maxRRDepth mt s = minimumBy ordBS encodings
 >	where
 >		n = toInteger $ B.length s
 >		mt' = if mt < 0 then n else mt
->		bs = map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT 0 rDepth t mt' s)) [mt',mt'-1..1] 
+>		simple = [B.cons W._0 $ encodeBinary s]
+>		bs = if leftRDepth >= maxLRDepth 
+>			then
+>				simple
+>			else 
+>				if leftRDepth == 0 
+>					then
+>						map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT leftRDepth maxLRDepth 0 maxRRDepth t mt' s)) [mt',mt'-1..1] 
+>					else
+>							--simple
+>						simple ++ map (\t -> (B.cons W._1 $ selfDelimited(toBin (n-t)) `B.append` encodeT leftRDepth maxLRDepth 0 maxRRDepth t mt' s)) [mt',mt'-1..1]
 >		encodings = bs `PS.using` PS.parList PS.rdeepseq
