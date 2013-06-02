@@ -6,7 +6,7 @@ This algorithm *actually* encodes strings, it is not just an estimation, encoded
 
 Decoding such a string is fast and is not implemented here as any scripting language is good enough for that.
 
-> module RecursiveCompression(encode,pEncode) where
+> module RecursiveCompression(encode) where
 
 > import StringUtils
 > import qualified Data.Word8 as W
@@ -16,7 +16,6 @@ Decoding such a string is fast and is not implemented here as any scripting lang
 > import Data.List.Utils
 > import Data.List
 > import Data.Function
-> import Control.Parallel.Strategies as PS
 
 
 > zeroStr :: B.ByteString
@@ -152,23 +151,3 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >					else
 >	--					simple ++ map (\t -> (B.cons W._1 $ selfDelimited(toBin (n-t)) `B.append` encodeT leftRDepth maxLRDepth 0 maxRRDepth t mt' topNPatterns s)) [mt',mt'-1..1]
 >						simple ++ map (\t -> (W._1 `B.cons` (preEncode s) `B.append` encodeT leftRDepth maxLRDepth 0 maxRRDepth t mt' topNPatterns s)) [mt',mt'-1..1]
-
-`pEncode` : same as `encode` but in parallel. Different values of *t* are tested at the same time.
-
-> pEncode :: Integer -> Integer -> Integer -> Integer -> Integer -> B.ByteString -> B.ByteString
-> pEncode leftRDepth maxLRDepth maxRRDepth mt topNPatterns s = minimumBy ordBS encodings
->	where
->		n = toInteger $ B.length s
->		mt' = if mt < 0 then n else mt
->		simple = [B.cons W._0 $ encodeBinary s]
->		bs = if leftRDepth > maxLRDepth 
->			then
->				simple
->			else 
->				if leftRDepth == 0 
->					then
->						map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT leftRDepth maxLRDepth 0 maxRRDepth t mt' topNPatterns s)) [mt',mt'-1..1] 
->					else
->--						simple ++ map (\t -> (B.cons W._1 $ selfDelimited(toBin (n-t)) `B.append` encodeT leftRDepth maxLRDepth 0 maxRRDepth t mt' topNPatterns s)) [mt',mt'-1..1]
->						simple ++ map (\t -> (W._1 `B.cons` (preEncode s) `B.append` encodeT leftRDepth maxLRDepth 0 maxRRDepth t mt' topNPatterns s)) [mt',mt'-1..1]
->		encodings = bs `PS.using` PS.parList PS.rdeepseq

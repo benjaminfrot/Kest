@@ -27,7 +27,7 @@ Distribution : Distribution of complexities for strings of a given length
 >		let
 >			l = randomList 0 (2^strLength -1) (2^sSize)
 >			strings = fmap (map (toBinFixedLength strLength)) l
->			complexities = fmap (map (toInteger. B.length . (pEncode 0 lDepth rDepth mT nP))) strings
+>			complexities = fmap (map (toInteger. B.length . (encode 0 lDepth rDepth mT nP))) strings
 >		in
 >			fmap histogram complexities
 
@@ -37,7 +37,7 @@ Distribution : Distribution of complexities for strings of a given length
 Get a list of strings; return a list of encoded strings
 
 > encodeList :: Integer -> Integer -> Integer -> Integer -> [B.ByteString] -> [String]
-> encodeList lDepth rDepth mT nP =  map (C.unpack.(pEncode 0 lDepth rDepth mT nP).toBinaryString) 
+> encodeList lDepth rDepth mT nP =  map (C.unpack.(encode 0 lDepth rDepth mT nP).toBinaryString) 
 
 ++++++++++ Command line parsing / Help ++++++++++++++++++
 
@@ -100,4 +100,4 @@ Main function : parse arguments
 >				strs <- fmap C.lines (B.readFile fn)
 >				putStrLn $ concat $ map ((\x -> x ++ "\n").(if jK then show.length else id)) (encodeList l d m nP strs)
 >			SingleStr {inputStr = iS, maxLength = m, rrecursionDepth = d, lrecursionDepth = l,justK = jK, nPatterns = nP} -> do
->				putStrLn $ (if jK then show.B.length else C.unpack) $ pEncode 0 l d m nP ((toBinaryString.C.pack) iS) 
+>				putStrLn $ (if jK then show.B.length else C.unpack) $ encode 0 l d m nP ((toBinaryString.C.pack) iS) 
