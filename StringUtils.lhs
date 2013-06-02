@@ -58,7 +58,7 @@ Binary String Ranking : See http://en.wikipedia.org/wiki/Combinatorial_number_sy
 substrings : Returns all substrings of length n of s
 
 > substrings :: Int -> B.ByteString -> [B.ByteString]
-> substrings n s = [ ((B.take n).(B.drop i)) s | i <- [0..(B.length s - n)]] -- Could be MUCH faster! FIXME
+> substrings n s = [((B.take n).(B.drop i)) s | i <- [0..(B.length s - n)]] -- Could be MUCH faster! FIXME
 
 
 ++++ Support for non binary strings ++++
