@@ -44,7 +44,7 @@ NOTE : The length of the string is not encoded, this is done outside this functi
 >			nOnes = (toInteger $ B.length s ) - nZeros
 
 > preEncode :: B.ByteString -> B.ByteString
-> preEncode s = symCount `B.append` selfDelimited (toBin $ rankBinary s)
+> preEncode s = symCount
 >		where
 >			symCount = if nZeros < nOnes then B.cons W._0 (selfDelimited (toBin nZeros)) else B.cons W._1 (selfDelimited (toBin nOnes))
 >			nZeros = toInteger (B.count W._0 s)

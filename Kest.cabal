@@ -1,5 +1,5 @@
 Name:                Kest
-Version:             0.6
+Version:             1.1
 Description:         Approximate Kolmogorov Complexity by Compressing Strings
 License:             GPL
 License-file:        LICENSE
@@ -10,7 +10,7 @@ cabal-version: >= 1.4
 Cabal-Version:       >=1.2
 Executable Kest
   Main-is : Kest.lhs
-  Build-depends :  bytestring, MissingH, parallel, random, containers, cmdargs, stringsearch, base, math-functions, word8, exact-combinatorics
+  Build-depends :  bytestring, MissingH, parallel, random, containers, cmdargs, stringsearch, base, math-functions, word8, exact-combinatorics,huffman
   ghc-options: -threaded -O2
   extensions: ViewPatterns DeriveDataTypeable
   Other-Modules: StringUtils,RecursiveCompression
