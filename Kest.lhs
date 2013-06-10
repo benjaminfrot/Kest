@@ -22,12 +22,12 @@ Generate a list of n randoms numbers in [a,b]
 
 Distribution : Distribution of complexities for strings of a given length
 
-> distribution :: Integer -> Integer -> Integer -> Integer -> Integer -> Integer -> IO (Map.Map Integer Integer)
-> distribution strLength lDepth rDepth mT sSize nP = 
+> distribution :: Parameters -> Integer -> Integer -> IO (Map.Map Integer Integer)
+> distribution ps strLength sSize = 
 >		let
 >			l = randomList 0 (2^strLength -1) (2^sSize)
 >			strings = fmap (map (toBinFixedLength strLength)) l
->			complexities = fmap (map (toInteger. B.length . (pEncode 0 lDepth rDepth mT nP))) strings
+>			complexities = fmap (map (toInteger. B.length . (pEncode ps))) strings
 >		in
 >			fmap histogram complexities
 
@@ -36,12 +36,12 @@ Distribution : Distribution of complexities for strings of a given length
 
 Get a list of strings; return a list of encoded strings
 
-> encodeList :: Integer -> Integer -> Integer -> Integer -> [B.ByteString] -> [String]
-> encodeList lDepth rDepth mT nP =  map (C.unpack.(pEncode 0 lDepth rDepth mT nP).toBinaryString) 
+> encodeList :: Parameters -> [B.ByteString] -> [String]
+> encodeList ps =  map (C.unpack.(pEncode ps).toBinaryString) 
 
 ++++++++++ Command line parsing / Help ++++++++++++++++++
 
-> summaryStr = summary "Kest V.1.2 2013  -- benjamin.frot@dtc.ox.ac.uk"
+> summaryStr = summary "Kest V.1.1.1 2013  -- benjamin.frot@dtc.ox.ac.uk"
 > data Kest = 
 >		Dist {stringLength :: Integer, maxLength :: Integer, sampleSize :: Integer, rrecursionDepth :: Integer,lrecursionDepth :: Integer, nPatterns :: Integer}
 >	 | File {maxLength :: Integer, rrecursionDepth :: Integer, lrecursionDepth :: Integer, filename :: FilePath, justK :: Bool, nPatterns :: Integer}
@@ -88,16 +88,26 @@ Get a list of strings; return a list of encoded strings
 > nPatternsHelp = help "Number of patterns to take into account. Setting it to k will take the top k most frequent patterns and the top k least frequent patterns. If -1 then all of them are used. Default -1."
 > mode = cmdArgs $ modes [dist&=auto,file,single] &= summaryStr &= help "Approximate Kolmogorov complexity by encoding binary strings. Patterns of various length are detected and the input is recursively encoded. It can be *very* time consuming, the recursion depth should be chosen small. Parallel execution is supported : add +RTS -N to use all available cores, +RTS -Nn to use n cores, e.g. ./Kest -f myStrings +RTS -N2"
 
+> defPS = Parameters {
+>		leftRDepth = 0
+>		, maxLRDepth  = 0
+>		, rightRDepth = 0
+>		, maxRRDepth = 0
+>		, mt = 0
+>		, topNPatterns = 0}
+
 Main function : parse arguments 
 
 > main = do 
 >		arguments <- mode
 >		case arguments of
 >			Dist {stringLength = n, maxLength = m, sampleSize = s, rrecursionDepth = d,lrecursionDepth = l, nPatterns = nP} -> do
->				complexities <- distribution n l d m s nP
+>				complexities <- distribution (defPS {mt = m, maxRRDepth = d,  maxLRDepth = l, topNPatterns = nP}) n s
 >				putStrLn $ printDistribution s complexities
 >			File {filename = fn, maxLength = m, rrecursionDepth = d, lrecursionDepth = l,justK = jK, nPatterns = nP} -> do
 >				strs <- fmap C.lines (B.readFile fn)
->				putStrLn $ concat $ map ((\x -> x ++ "\n").(if jK then show.length else id)) (encodeList l d m nP strs)
+>				putStrLn $ concat $ map ((\x -> x ++ "\n").(if jK then show.length else id)) 
+>					(encodeList (defPS {mt = m, maxRRDepth = d,  maxLRDepth = l, topNPatterns = nP}) strs) 
 >			SingleStr {inputStr = iS, maxLength = m, rrecursionDepth = d, lrecursionDepth = l,justK = jK, nPatterns = nP} -> do
->				putStrLn $ (if jK then show.B.length else C.unpack) $ pEncode 0 l d m nP ((toBinaryString.C.pack) iS) 
+>				putStrLn $ (if jK then show.B.length else C.unpack) $ 
+>					pEncode (defPS {mt = m, maxRRDepth = d,  maxLRDepth = l, topNPatterns = nP}) ((toBinaryString.C.pack) iS) 
