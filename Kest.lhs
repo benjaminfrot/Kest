@@ -41,7 +41,7 @@ Get a list of strings; return a list of encoded strings
 
 ++++++++++ Command line parsing / Help ++++++++++++++++++
 
-> summaryStr = summary "Kest V.1.1 2013  -- benjamin.frot@dtc.ox.ac.uk"
+> summaryStr = summary "Kest V.1.2 2013  -- benjamin.frot@dtc.ox.ac.uk"
 > data Kest = 
 >		Dist {stringLength :: Integer, maxLength :: Integer, sampleSize :: Integer, rrecursionDepth :: Integer,lrecursionDepth :: Integer, nPatterns :: Integer}
 >	 | File {maxLength :: Integer, rrecursionDepth :: Integer, lrecursionDepth :: Integer, filename :: FilePath, justK :: Bool, nPatterns :: Integer}

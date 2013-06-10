@@ -11,6 +11,7 @@ on ByteStrings)
 > import qualified Data.ByteString as B
 > import qualified Data.Set as S
 > import qualified Data.Map as M
+> import qualified Data.Compression.Huffman as H
 
 Infix notation for n choose k
 
@@ -68,11 +69,10 @@ Not very advanced for now : count the number of different symbols. If the cardin
 then encode each symbol on log2(k) bits.
 
 > toBinaryString :: B.ByteString -> B.ByteString
-> toBinaryString s = B.foldl convertToBinary B.empty s
+> toBinaryString s =  B.foldl convertToBinary B.empty s
 >		where
 >			alphabet = S.fromList (BI.unpackBytes s)
 >			cardinality = S.size alphabet
 >			l = ceiling $ logBase 2 (fromIntegral cardinality)
 >			symbolMap = M.fromList (zip (S.toList alphabet) [1..cardinality])
 >			convertToBinary bs c = B.append bs (toBinFixedLength l (toInteger $ M.findIndex c symbolMap))
-
