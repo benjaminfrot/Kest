@@ -1,5 +1,5 @@
-*RecursiveCompression.lhs* - A Haskell
-implementation of a 'compression' algorithm used to estimate 
+*RecursiveCompression.lhs* - A Haskell implementation of a 'compression' algorithm used to estimate 
+
 Kolmogorov Complexity.
 
 This algorithm *actually* encodes strings, it is not just an estimation, encoded strings can be uniquely decoded
@@ -18,6 +18,7 @@ Decoding such a string is fast and is not implemented here as any scripting lang
 > import Data.Function
 > import Control.Parallel.Strategies as PS
 
+> -- TODO : The number of parameters given to encodeT is becoming ridiculous : use a record instead.
 
 > zeroStr :: B.ByteString
 > zeroStr = B.pack [W._0]
@@ -94,7 +95,8 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >						let
 >							elemCounts = [(element, count) | element <- uniquePatterns, let count = length (filter (==element) allPatterns)]
 >							sortedCounts = sortBy (compare `on` snd) elemCounts
->						in
+>						in -- Now that the patterns have been sorted by frequency we need to pick the n most frequent and the n least frequent.
+>							 -- What if n = 2 and there are 5 patterns of length 1. ... we want to select two patterns at random : TODO!
 >							nub (take (fromIntegral topNPatterns) (((map fst).reverse) sortedCounts) ++
 >								take (fromIntegral topNPatterns) (map fst sortedCounts))
 >			level0 = 
