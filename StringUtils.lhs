@@ -69,13 +69,10 @@ Not very advanced for now : count the number of different symbols. If the cardin
 then encode each symbol on log2(k) bits.
 
 > toBinaryString :: B.ByteString -> B.ByteString
-> toBinaryString s = B.concat $ map (toHuff (codeMap bs)) bs
+>	toBinaryString s =  B.foldl convertToBinary B.empty s
 >		where
->			bs = BI.unpackBytes s
->			histogram xs = M.toList . foldl insert M.empty $ xs
->				where insert a k = M.insertWith' (+) k 1 a	
->			code bs = H.codewords $ H.huffman (histogram bs)
->			codeMap xs = M.fromList (code xs) 
->			toHuff codeMap c = if M.size codeMap == 1 
->				then C.pack "0"
->				else C.pack $ concat $ map show (M.findWithDefault ([H.Zero]) c codeMap)
+>			alphabet = S.fromList (BI.unpackBytes s)
+> 		cardinality = S.size alphabet
+>			l = ceiling $ logBase 2 (fromIntegral cardinality)
+>			symbolMap = M.fromList (zip (S.toList alphabet) [1..cardinality])
+>			convertToBinary bs c = B.append bs (toBinFixedLength l (toInteger $ M.findIndex c symbolMap))
