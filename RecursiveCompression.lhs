@@ -67,7 +67,7 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 > encodeNAry' params p s = e
 > 	where 
 >			s' = toStrict $ S.replace bStr oneStr (toStrict $ S.replace  oneStr zeroStr (toStrict $ S.replace p bStr s))
->			e = encode (params {mt = (toInteger $ B.length s')}) s'
+>			e = encodeBinary s'
 
 `encodeT` is the most important function for algorithm. Here is an idea of how it works:
 - Take an integer *t* and a string *s* (of length *n*, say). 
@@ -140,7 +140,6 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >	where
 >		n = toInteger $ B.length s
 >		mt' = if (mt ps) < 0 then n else (mt ps)
->		simple = [B.cons W._0 $ encodeBinary s]
 >		encodings = map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT (ps {rightRDepth = 0, mt = mt'}) t s)) [mt',mt'-1..1] 
 
 `pEncode` : same as `encode` but in parallel. Different values of *t* are tested at the same time.
@@ -150,6 +149,5 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >	where
 >		n = toInteger $ B.length s
 >		mt' = if (mt ps) < 0 then n else (mt ps)
->		simple = [B.cons W._0 $ encodeBinary s]
 >		bs = map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT (ps {rightRDepth = 0, mt = mt'}) t s)) [mt',mt'-1..1] 
 >		encodings = bs `PS.using` PS.parList PS.rdeepseq
