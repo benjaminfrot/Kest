@@ -6,7 +6,7 @@ This algorithm *actually* encodes strings, it is not just an estimation, encoded
 
 Decoding such a string is fast and is not implemented here as any scripting language is good enough for that.
 
-> module RecursiveCompression(encode,pEncode,Parameters(Parameters,leftRDepth,maxLRDepth,rightRDepth,maxRRDepth,mt,topNPatterns)) where
+> module RecursiveCompression(encode,pEncode,Parameters(Parameters,rightRDepth,maxRRDepth,mt,topNPatterns)) where
 
 > import StringUtils
 > import qualified Data.Word8 as W
@@ -19,9 +19,7 @@ Decoding such a string is fast and is not implemented here as any scripting lang
 > import Control.Parallel.Strategies as PS
 
 > data Parameters = Parameters {
->		leftRDepth :: Integer -- Current depth of 'left' recursion 
->		,maxLRDepth :: Integer -- Maximum depth of left recursion
->		,rightRDepth :: Integer -- Current depth of right recursion
+>		rightRDepth :: Integer -- Current depth of right recursion
 >		,maxRRDepth :: Integer -- Maximum depth of right recursion
 >		,mt :: Integer -- Maximum size of pattern
 >		,topNPatterns :: Integer -- Keep only the N most frequent patterns and N least frequent
@@ -51,14 +49,6 @@ NOTE : The length of the string is not encoded, this is done outside this functi
 >			nZeros = toInteger (B.count W._0 s)
 >			nOnes = (toInteger $ B.length s ) - nZeros
 
-> preEncode :: B.ByteString -> B.ByteString
-> preEncode s = symCount
->		where
->			symCount = if nZeros < nOnes then B.cons W._0 (selfDelimited (toBin nZeros)) else B.cons W._1 (selfDelimited (toBin nOnes))
->			nZeros = toInteger (B.count W._0 s)
->			nOnes = (toInteger $ B.length s ) - nZeros
-
-
 `encodeNAry` is a function that takes a "pattern", *p* say, and a string *s*. All the occurences of *p* in *s* are replaced
 by ones. The other bits of the string are replaced by zeros. This gives a binary string which can be encoded using `encodeBinary`.
 The Boolean *b* given as parameter is here only tell whether the algorithm reached the bottom of the recursion stack or not.
@@ -77,7 +67,7 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 > encodeNAry' params p s = e
 > 	where 
 >			s' = toStrict $ S.replace bStr oneStr (toStrict $ S.replace  oneStr zeroStr (toStrict $ S.replace p bStr s))
->			e = encode (params {leftRDepth = (leftRDepth params) + 1, mt = (toInteger $ B.length s')}) s'
+>			e = encode (params {mt = (toInteger $ B.length s')}) s'
 
 `encodeT` is the most important function for algorithm. Here is an idea of how it works:
 - Take an integer *t* and a string *s* (of length *n*, say). 
@@ -151,15 +141,7 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >		n = toInteger $ B.length s
 >		mt' = if (mt ps) < 0 then n else (mt ps)
 >		simple = [B.cons W._0 $ encodeBinary s]
->		encodings = if (leftRDepth ps) > (maxLRDepth ps)
->			then
->				simple
->			else 
->				if (leftRDepth ps) == 0 
->					then
->						map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT (ps {rightRDepth = 0, mt = mt'}) t s)) [mt',mt'-1..1] 
->					else
->						simple ++ map (\t -> (W._1 `B.cons` (preEncode s) `B.append` encodeT (ps {rightRDepth = 0, mt = mt' }) t s)) [mt',mt'-1..1]
+>		encodings = map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT (ps {rightRDepth = 0, mt = mt'}) t s)) [mt',mt'-1..1] 
 
 `pEncode` : same as `encode` but in parallel. Different values of *t* are tested at the same time.
 
@@ -169,13 +151,5 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >		n = toInteger $ B.length s
 >		mt' = if (mt ps) < 0 then n else (mt ps)
 >		simple = [B.cons W._0 $ encodeBinary s]
->		bs = if (leftRDepth ps) > (maxLRDepth ps)
->			then
->				simple
->			else 
->				if (leftRDepth ps) == 0 
->					then
->						map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT (ps {rightRDepth = 0, mt = mt'}) t s)) [mt',mt'-1..1] 
->					else
->						simple ++ map (\t -> (W._1 `B.cons` (preEncode s) `B.append` encodeT (ps {rightRDepth = 0, mt = mt'}) t s)) [mt',mt'-1..1]
+>		bs = map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT (ps {rightRDepth = 0, mt = mt'}) t s)) [mt',mt'-1..1] 
 >		encodings = bs `PS.using` PS.parList PS.rdeepseq

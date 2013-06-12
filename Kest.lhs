@@ -43,9 +43,9 @@ Get a list of strings; return a list of encoded strings
 
 > summaryStr = summary "Kest V.1.1.1 2013  -- benjamin.frot@dtc.ox.ac.uk"
 > data Kest = 
->		Dist {stringLength :: Integer, maxLength :: Integer, sampleSize :: Integer, rrecursionDepth :: Integer,lrecursionDepth :: Integer, nPatterns :: Integer}
->	 | File {maxLength :: Integer, rrecursionDepth :: Integer, lrecursionDepth :: Integer, filename :: FilePath, justK :: Bool, nPatterns :: Integer}
->	 | SingleStr {inputStr :: String, maxLength :: Integer, rrecursionDepth :: Integer, lrecursionDepth :: Integer, justK :: Bool, nPatterns :: Integer}
+>		Dist {stringLength :: Integer, maxLength :: Integer, sampleSize :: Integer, rrecursionDepth :: Integer, nPatterns :: Integer}
+>	 | File {maxLength :: Integer, rrecursionDepth :: Integer, filename :: FilePath, justK :: Bool, nPatterns :: Integer}
+>	 | SingleStr {inputStr :: String, maxLength :: Integer, rrecursionDepth :: Integer, justK :: Bool, nPatterns :: Integer}
 >	deriving (Eq,Show,Data,Typeable)
 
 > dist = Dist 
@@ -54,7 +54,6 @@ Get a list of strings; return a list of encoded strings
 >	,sampleSize = 10 &= help "Number of strings to sample : 2^sampleSize. Default is 10, so 1024 are sampled."
 >	, maxLength = -1 &= mLHelp
 >	, rrecursionDepth = 1 &= rDHelp
->	, lrecursionDepth = 0 &= lrDHelp
 >	, nPatterns = -1 &= nPatternsHelp 
 > } &= help "Compute the distribution of complexities for strings of a given length by sampling the space at uniformly at random."
 
@@ -62,7 +61,6 @@ Get a list of strings; return a list of encoded strings
 >	{
 >	maxLength = -1 &= mLHelp
 >	, rrecursionDepth = 1 &= rDHelp
->	, lrecursionDepth = 0 &= lrDHelp
 >	, filename = "./to_encode" &= fnHelp
 >	, nPatterns = -1 &= nPatternsHelp 
 > , justK = False &= justKHelp
@@ -73,7 +71,6 @@ Get a list of strings; return a list of encoded strings
 >	inputStr = "000000000" &= iShelp
 >	, maxLength = -1 &= mLHelp
 >	, rrecursionDepth = 1 &= rDHelp
->	, lrecursionDepth = 0 &= lrDHelp
 >	, nPatterns = -1 &= nPatternsHelp 
 > , justK = False &= justKHelp
 >	} &= help "Encode a single string given as parameter."
@@ -81,7 +78,6 @@ Get a list of strings; return a list of encoded strings
 > strLHelp = help "Length of the strings to sample. Default : 10"
 > mLHelp = help "Maximum length of the patterns to search for inside the strings. -1 sets it to the length of the input string. Default : -1"
 > rDHelp = help "Once a patten has been found, how many other patterns should the algorithm try to detect. 0 means no extra patterns. Default 1."
-> lrDHelp = help "The string encoding the positions can encoded recursively using this algorithm or can be encoded naively. This is controls the recursion depth. Default 0."
 > fnHelp = help "Filename containing the list of strings to encode. Make sure there are no empty lines. Default ./to_encode"
 > iShelp = help "String to be encoded."
 > justKHelp = help "Whether only the length of the encoding should be output instead of the whole string. Default False."
@@ -89,9 +85,7 @@ Get a list of strings; return a list of encoded strings
 > mode = cmdArgs $ modes [dist&=auto,file,single] &= summaryStr &= help "Approximate Kolmogorov complexity by encoding binary strings. Patterns of various length are detected and the input is recursively encoded. It can be *very* time consuming, the recursion depth should be chosen small. Parallel execution is supported : add +RTS -N to use all available cores, +RTS -Nn to use n cores, e.g. ./Kest -f myStrings +RTS -N2"
 
 > defPS = Parameters {
->		leftRDepth = 0
->		, maxLRDepth  = 0
->		, rightRDepth = 0
+>		rightRDepth = 0
 >		, maxRRDepth = 0
 >		, mt = 0
 >		, topNPatterns = 0}
@@ -101,13 +95,13 @@ Main function : parse arguments
 > main = do 
 >		arguments <- mode
 >		case arguments of
->			Dist {stringLength = n, maxLength = m, sampleSize = s, rrecursionDepth = d,lrecursionDepth = l, nPatterns = nP} -> do
->				complexities <- distribution (defPS {mt = m, maxRRDepth = d,  maxLRDepth = l, topNPatterns = nP}) n s
+>			Dist {stringLength = n, maxLength = m, sampleSize = s, rrecursionDepth = d, nPatterns = nP} -> do
+>				complexities <- distribution (defPS {mt = m, maxRRDepth = d, topNPatterns = nP}) n s
 >				putStrLn $ printDistribution s complexities
->			File {filename = fn, maxLength = m, rrecursionDepth = d, lrecursionDepth = l,justK = jK, nPatterns = nP} -> do
+>			File {filename = fn, maxLength = m, rrecursionDepth = d, justK = jK, nPatterns = nP} -> do
 >				strs <- fmap C.lines (B.readFile fn)
 >				putStrLn $ concat $ map ((\x -> x ++ "\n").(if jK then show.length else id)) 
->					(encodeList (defPS {mt = m, maxRRDepth = d,  maxLRDepth = l, topNPatterns = nP}) strs) 
->			SingleStr {inputStr = iS, maxLength = m, rrecursionDepth = d, lrecursionDepth = l,justK = jK, nPatterns = nP} -> do
+>					(encodeList (defPS {mt = m, maxRRDepth = d,  topNPatterns = nP}) strs) 
+>			SingleStr {inputStr = iS, maxLength = m, rrecursionDepth = d, justK = jK, nPatterns = nP} -> do
 >				putStrLn $ (if jK then show.B.length else C.unpack) $ 
->					pEncode (defPS {mt = m, maxRRDepth = d,  maxLRDepth = l, topNPatterns = nP}) ((toBinaryString.C.pack) iS) 
+>					pEncode (defPS {mt = m, maxRRDepth = d, topNPatterns = nP}) ((toBinaryString.C.pack) iS) 

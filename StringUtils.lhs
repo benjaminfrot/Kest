@@ -11,7 +11,6 @@ on ByteStrings)
 > import qualified Data.ByteString as B
 > import qualified Data.Set as S
 > import qualified Data.Map as M
-> import qualified Data.Compression.Huffman as H
 
 Infix notation for n choose k
 
