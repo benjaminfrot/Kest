@@ -109,8 +109,7 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >								if B.length s' == 0 then e' else e' `B.append` encodeBinary s'
 >					encodings = map encodeWithPattern patterns
 >				in
->					--foldl (\x y -> if (B.length x) <= (B.length y) then x else y) best encodings
->					minimumBy (compare `on` B.length) encodings
+>					foldl (\x y -> if (B.length x) <= (B.length y) then x else y) best encodings
 >			higherLevels b = 
 >				let
 >					encodeWithPattern p =
@@ -156,7 +155,7 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >		getBest b t = if (B.length e) <= (B.length b) then e else b
 >			where
 >				e = selfD `B.append` encodeT (ps {rightRDepth = 0, mt=mt'}) b (B.length selfD) t s
->				selfD = selfDelimited(toBin (n-t))
+>				selfD = selfDelimited $ toBin (n-t)
 >		encodings = foldl getBest longWord [mt',mt'-1..1]
 
 `pEncode` : same as `encode` but in parallel. Different values of *t* are tested at the same time.
