@@ -89,8 +89,8 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 	;  b) repeat the same operation on *s'*, trying all possible values of *t*.
 - Return the best encoding, *i.e.* the shortest one.
 
-> encodeT :: Parameters -> Int -> Int -> Integer -> B.ByteString -> B.ByteString
-> encodeT ps best current t s = 
+> encodeT :: Parameters -> Integer -> B.ByteString -> B.ByteString
+> encodeT ps t s = 
 >		let 
 >			allPatterns = substrings (fromIntegral t) s
 >			uniquePatterns = nub allPatterns
@@ -127,7 +127,6 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >							e' = encodeNAry ps False p s
 >							s' = toStrict $ S.replace p B.empty s
 >							r = min t (toInteger (B.length s'))
->							-- If e' plus the current lenght is greater than the best then...
 >							encodeDeeper l = e' `B.append` encodeT (ps {rightRDepth = (rightRDepth ps) +1}) l s'
 >						in
 >							if B.length s' == 0 then Nothing
@@ -158,9 +157,9 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >			else 
 >				if (leftRDepth ps) == 0 
 >					then
->						map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT (ps {rightRDepth = 0, mt = mt'}) 0 t s)) [mt',mt'-1..1] 
+>						map (\t -> (selfDelimited(toBin (n-t)) `B.append` encodeT (ps {rightRDepth = 0, mt = mt'}) t s)) [mt',mt'-1..1] 
 >					else
->						simple ++ map (\t -> (W._1 `B.cons` (preEncode s) `B.append` encodeT (ps {rightRDepth = 0, mt = mt' }) 0 t s)) [mt',mt'-1..1]
+>						simple ++ map (\t -> (W._1 `B.cons` (preEncode s) `B.append` encodeT (ps {rightRDepth = 0, mt = mt' }) t s)) [mt',mt'-1..1]
 
 `pEncode` : same as `encode` but in parallel. Different values of *t* are tested at the same time.
 
