@@ -1,13 +1,14 @@
 StringUtils.lhs - A set of functions performing basic operations (mostly
 on ByteStrings)
 
-> module StringUtils((#),toBin,selfDelimited,rankBinary,substrings,toStrict,ordBS,toBinFixedLength,toBinaryString) where
+> module StringUtils((#),toBin,selfDelimited,rankBinary,substrings,toStrict,ordBS,toBinFixedLength,toBinaryString,enumeratePositions) where
 > import qualified Math.Combinatorics.Exact.Binomial as S
 > import qualified Numeric as N
 > import qualified Data.Word8 as W
 > import qualified Data.ByteString.Char8 as C
 > import qualified Data.ByteString.Lazy as BL
 > import qualified Data.ByteString.Internal as BI
+> import qualified Data.ByteString.Search as SS
 > import qualified Data.ByteString as B
 > import qualified Data.Set as S
 > import qualified Data.Map as M
@@ -60,6 +61,26 @@ substrings : Returns all substrings of length n of s
 > substrings :: Int -> B.ByteString -> [B.ByteString]
 > substrings n s = [((B.take n).(B.drop i)) s | i <- [0..(B.length s - n)]] -- Could be MUCH faster! FIXME
 
+enumeratePositions
+
+> enumeratePositions :: B.ByteString -> B.ByteString -> [(B.ByteString,B.ByteString)]
+> enumeratePositions s p = 
+>		let
+>			toks = SS.split p s
+>			n_occurences = (length toks)-1
+>			createPair = 
+>				let
+>					(+-+) (a,b) (c,d) = (a `B.append` c, b `B.append` d)
+>					blend (y:[]) (B.uncons -> Nothing) = (B.replicate (B.length y) W._0, y)
+>					blend (y:ys) (B.uncons -> Just((==W._1) -> True,zs)) = ((B.replicate (B.length y) W._0) `B.append` (C.pack "1"), y) +-+ (blend ys zs)
+>					blend (y:ys) (B.uncons -> Just((==W._0) -> True,zs)) = ((B.replicate ((B.length y) + (B.length p)) W._0) , y `B.append` p) +-+ (blend ys zs)
+>				in
+>					blend toks
+>		in
+>			if n_occurences > 5
+>	--			then map createPair (map (\x -> toBinFixedLength (toInteger n_occurences) (toInteger x)) [(2^(n_occurences-5)-1)..(2^n_occurences - 1)])
+>				then map createPair (map (\x -> toBinFixedLength (toInteger n_occurences) (toInteger x)) [2^n_occurences -2,2^n_occurences - 1])
+>				else map createPair (map (\x -> toBinFixedLength (toInteger n_occurences) (toInteger x)) [1..(2^n_occurences-1)])
 
 ++++ Support for non binary strings ++++
 The algorithm works only on binary strings. So we want some simple tools to turn a string over an arbitrary

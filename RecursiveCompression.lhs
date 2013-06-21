@@ -6,7 +6,7 @@ This algorithm *actually* encodes strings, it is not just an estimation, encoded
 
 Decoding such a string is fast and is not implemented here as any scripting language is good enough for that.
 
-> module RecursiveCompression(encode,pEncode,Parameters(Parameters,rightRDepth,maxRRDepth,mt,topNPatterns)) where
+> module RecursiveCompression(encode,Parameters(Parameters,rightRDepth,maxRRDepth,mt)) where
 
 > import StringUtils
 > import qualified Data.Word8 as W
@@ -16,13 +16,11 @@ Decoding such a string is fast and is not implemented here as any scripting lang
 > import Data.List.Utils
 > import Data.List
 > import Data.Function
-> import Control.Parallel.Strategies as PS
 
 > data Parameters = Parameters {
 >		rightRDepth :: Integer -- Current depth of right recursion
 >		,maxRRDepth :: Integer -- Maximum depth of right recursion
 >		,mt :: Integer -- Maximum size of pattern
->		,topNPatterns :: Integer -- Keep only the N most frequent patterns and N least frequent
 >	}
 
 > zeroStr :: B.ByteString
@@ -43,11 +41,13 @@ Decoding such a string is fast and is not implemented here as any scripting lang
 NOTE : The length of the string is not encoded, this is done outside this function, and only if necessary.
 
 > encodeBinary :: B.ByteString -> B.ByteString
-> encodeBinary s = symCount `B.append` selfDelimited (toBin $ rankBinary s)
+> encodeBinary s = symCount `B.append` if B.length e <= B.length re then B.cons W._0 e else B.cons W._1 re
 >		where
+>			e = selfDelimited (toBin $ rankBinary s)
+>			re = selfDelimited (toBin $ rankBinary (B.reverse s))
 >			symCount = if nZeros < nOnes then B.cons W._0 (selfDelimited (toBin nZeros)) else B.cons W._1 (selfDelimited (toBin nOnes))
 >			nZeros = toInteger (B.count W._0 s)
->			nOnes = (toInteger $ B.length s ) - nZeros
+>			nOnes = (toInteger $ B.length s) - nZeros
 
 `encodeNAry` is a function that takes a "pattern", *p* say, and a string *s*. All the occurences of *p* in *s* are replaced
 by ones. The other bits of the string are replaced by zeros. This gives a binary string which can be encoded using `encodeBinary`.
@@ -82,40 +82,27 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 > encodeT :: Parameters -> B.ByteString -> Int -> Integer -> B.ByteString -> B.ByteString
 > encodeT ps best current t s =
 >		let 
->			allPatterns = substrings (fromIntegral t) s
->			uniquePatterns = nub allPatterns
->			patterns = if toInteger (length uniquePatterns) <= (topNPatterns ps)
->				then uniquePatterns
->				else 
->					if (topNPatterns ps) <= 0 then uniquePatterns
->						else
->						let
->							elemCounts = [(element, count) | element <- uniquePatterns, let count = length (filter (==element) allPatterns)]
->							sortedCounts = sortBy (compare `on` snd) elemCounts
->						in -- Now that the patterns have been sorted by frequency we need to pick the n most frequent and the n least frequent.
->							 -- What if n = 2 and there are 5 patterns of length 1. ... we want to select two patterns at random : TODO!
->							nub (take (fromIntegral (topNPatterns ps)) (((map fst).reverse) sortedCounts) ++
->								take (fromIntegral (topNPatterns ps)) (map fst sortedCounts))
+>			patterns = substrings (fromIntegral t) s
 >			level0 = 
 >				let
->					encodeWithPattern p = if t == 1
->						then -- Simply encode the string
->							B.cons W._1 (selfDelimited p) `B.append` encodeBinary s
->						else -- The pattern is a proper substring
->							let
->								e' = encodeNAry ps True p s
->								s' = toStrict $ S.replace p B.empty s
->							in
->								if B.length s' == 0 then e' else e' `B.append` encodeBinary s'
->					encodings = map encodeWithPattern patterns
+>					encodeWithPatternPositions p (pos,s') =
+>						let
+>							e = (B.cons W._1 (selfDelimited p)) `B.append` (encodeBinary pos)
+>						in
+>							if B.length s' == 0 then e else e `B.append` encodeBinary s'
+>					encodeWithPattern p = 
+>						if t == 1 
+>							then [B.cons W._1 (selfDelimited p) `B.append` encodeBinary s]
+>							else map (encodeWithPatternPositions p) (enumeratePositions s p)
+>					encodings = concat $ map encodeWithPattern patterns
 >				in
 >					foldl (\x y -> if (B.length x) <= (B.length y) then x else y) best encodings
 >			higherLevels b = 
 >				let
->					encodeWithPattern p =
+>					encodeWithPattern p = map (encodeWithPatternPositions p) (enumeratePositions s p)
+>					encodeWithPatternPositions p (pos,s') =  
 >						let
->							e' = encodeNAry ps False p s
->							s' = toStrict $ S.replace p B.empty s
+>							e' = (B.cons W._0 (selfDelimited p)) `B.append` (encodeBinary pos)
 >							r = min t (toInteger (B.length s'))
 >							-- If e' plus the current lenght is greater than the best then...
 >							encodeDeeper l = if (B.length e') + current >= (B.length b) then Nothing else Just (e' `B.append` encodeT (ps {rightRDepth = (rightRDepth ps) +1}) b ((B.length e') + current) l s')
@@ -126,13 +113,14 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >					getBest b' p = 
 >						let 
 >							es = encodeWithPattern p
+>							es' = concat $ map (\x -> case x of 
+>								Just y -> y
+>								_ -> []) es 
 >							keepBest b'' x = case x of 
 >								Just x -> if (B.length b'') <= (B.length x) then b'' else x
 >								_ -> b''
 >						in
->							case es of 
->								Just es' -> foldl keepBest b' es'
->								_ -> b'
+>							foldl keepBest b' es'
 >					encodings = foldl getBest b patterns
 >				in
 >					if t == 1 then Nothing
@@ -155,21 +143,5 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >		getBest b t = if (B.length e) <= (B.length b) then e else b
 >			where
 >				e = selfD `B.append` encodeT (ps {rightRDepth = 0, mt=mt'}) b (B.length selfD) t s
->				selfD = selfDelimited $ toBin (n-t)
+>				selfD = B.empty
 >		encodings = foldl getBest longWord [mt',mt'-1..1]
-
-`pEncode` : same as `encode` but in parallel. Different values of *t* are tested at the same time.
-
-> pEncode :: Parameters -> B.ByteString -> B.ByteString
-> pEncode ps s = encodings
->	where
->		n = toInteger $ B.length s
->		mt' = if (mt ps) < 0 then n else (mt ps)
->		longWord = C.pack (replicate 2000 '0')
->		getBest b t = if (B.length e) <= (B.length b) then e else b
->			where
->				e = selfD `B.append` encodeT (ps {rightRDepth = 0, mt=mt'}) b (B.length selfD) t s
->				selfD = selfDelimited(toBin (n-t))
->		bs = foldl getBest longWord [mt',mt'-1..1]
->--		encodings = bs `PS.using` PS.parList PS.rdeepseq
->		encodings = bs
