@@ -42,7 +42,7 @@ Get a list of strings; return a list of encoded strings
 
 ++++++++++ Command line parsing / Help ++++++++++++++++++
 
-> summaryStr = summary "Kest V.2.0 2013  -- benjamin.frot@dtc.ox.ac.uk"
+> summaryStr = summary "Kest V.2.1 2013  -- benjamin.frot@dtc.ox.ac.uk"
 > data Kest = 
 >		Dist {stringLength :: Integer, maxLength :: Integer, sampleSize :: Integer, rrecursionDepth :: Integer}
 >	 | File {maxLength :: Integer, rrecursionDepth :: Integer, filename :: FilePath, justK :: Bool, dictionary :: FilePath}
@@ -88,6 +88,7 @@ Get a list of strings; return a list of encoded strings
 >		rightRDepth = 0
 >		, maxRRDepth = 0
 >		, mt = 0
+>		, enumThreshold = 5
 >		}
 
 A simple function to parse the dictionary

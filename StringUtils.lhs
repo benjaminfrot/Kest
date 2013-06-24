@@ -63,8 +63,8 @@ substrings : Returns all substrings of length n of s
 
 enumeratePositions
 
-> enumeratePositions :: B.ByteString -> B.ByteString -> [(B.ByteString,B.ByteString)]
-> enumeratePositions s p = 
+> enumeratePositions :: B.ByteString -> B.ByteString -> Int -> [(B.ByteString,B.ByteString)]
+> enumeratePositions s p t = 
 >		let
 >			toks = SS.split p s
 >			n_occurences = (length toks)-1
@@ -77,8 +77,7 @@ enumeratePositions
 >				in
 >					blend toks
 >		in
->			if n_occurences > 5
->	--			then map createPair (map (\x -> toBinFixedLength (toInteger n_occurences) (toInteger x)) [(2^(n_occurences-5)-1)..(2^n_occurences - 1)])
+>			if n_occurences > t
 >				then map createPair (map (\x -> toBinFixedLength (toInteger n_occurences) (toInteger x)) [2^n_occurences -2,2^n_occurences - 1])
 >				else map createPair (map (\x -> toBinFixedLength (toInteger n_occurences) (toInteger x)) [1..(2^n_occurences-1)])
 

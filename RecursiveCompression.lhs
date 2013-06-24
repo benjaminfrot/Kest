@@ -6,7 +6,7 @@ This algorithm *actually* encodes strings, it is not just an estimation, encoded
 
 Decoding such a string is fast and is not implemented here as any scripting language is good enough for that.
 
-> module RecursiveCompression(encode,Parameters(Parameters,rightRDepth,maxRRDepth,mt)) where
+> module RecursiveCompression(encode,Parameters(Parameters,rightRDepth,maxRRDepth,mt,enumThreshold)) where
 
 > import StringUtils
 > import qualified Data.Word8 as W
@@ -21,6 +21,7 @@ Decoding such a string is fast and is not implemented here as any scripting lang
 >		rightRDepth :: Integer -- Current depth of right recursion
 >		,maxRRDepth :: Integer -- Maximum depth of right recursion
 >		,mt :: Integer -- Maximum size of pattern
+>		,enumThreshold :: Int
 >	}
 
 > zeroStr :: B.ByteString
@@ -93,26 +94,26 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >					encodeWithPattern p = 
 >						if t == 1 
 >							then [B.cons W._1 (selfDelimited p) `B.append` encodeBinary s]
->							else map (encodeWithPatternPositions p) (enumeratePositions s p)
+>							else map (encodeWithPatternPositions p) (enumeratePositions s p (enumThreshold ps))
 >					encodings = concat $ map encodeWithPattern patterns
 >				in
 >					foldl (\x y -> if (B.length x) <= (B.length y) then x else y) best encodings
 >			higherLevels b = 
 >				let
->					encodeWithPattern p = map (encodeWithPatternPositions p) (enumeratePositions s p)
->					encodeWithPatternPositions p (pos,s') =  
+>					encodeWithPattern b' p = map (encodeWithPatternPositions b' p) (enumeratePositions s p (enumThreshold ps))
+>					encodeWithPatternPositions b' p (pos,s') =  
 >						let
 >							e' = (B.cons W._0 (selfDelimited p)) `B.append` (encodeBinary pos)
 >							r = min t (toInteger (B.length s'))
 >							-- If e' plus the current lenght is greater than the best then...
->							encodeDeeper l = if (B.length e') + current >= (B.length b) then Nothing else Just (e' `B.append` encodeT (ps {rightRDepth = (rightRDepth ps) +1}) b ((B.length e') + current) l s')
+>							encodeDeeper l = if (B.length e') + current >= (B.length b') then Nothing else Just (e' `B.append` (encodeT (ps {rightRDepth = (rightRDepth ps) +1}) b' ((B.length e') + current) l s'))
 >						in
 >							if B.length s' == 0 then Nothing
 >								else -- Else try to encode the left over
 >									Just $ map encodeDeeper [r,r-1..1]
 >					getBest b' p = 
 >						let 
->							es = encodeWithPattern p
+>							es = encodeWithPattern b' p
 >							es' = concat $ map (\x -> case x of 
 >								Just y -> y
 >								_ -> []) es 
@@ -142,6 +143,5 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 >		longWord = C.pack (replicate 2000 '0')
 >		getBest b t = if (B.length e) <= (B.length b) then e else b
 >			where
->				e = selfD `B.append` encodeT (ps {rightRDepth = 0, mt=mt'}) b (B.length selfD) t s
->				selfD = B.empty
+>				e = encodeT (ps {rightRDepth = 0, mt=mt'}) b 0 t s
 >		encodings = foldl getBest longWord [mt',mt'-1..1]
