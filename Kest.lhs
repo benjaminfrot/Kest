@@ -9,6 +9,7 @@ Kest.lhs - Entry point of the program. Parse command line options
 > import qualified Data.Map as Map
 > import qualified Data.Word8 as W
 > import System.Console.CmdArgs
+> import Control.Parallel.Strategies as PS
 
 Histogram : A simple function to build the histogram
 of a list (see http://langref.org/fantom+erlang+haskell/maps/algorithms/histogram)
@@ -24,13 +25,9 @@ Generate a list of n randoms numbers in [a,b]
 Distribution : Distribution of complexities for strings of a given length
 
 > distribution :: Parameters -> Integer -> Integer -> IO (Map.Map Integer Integer)
-> distribution ps strLength sSize = 
->		let
->			l = randomList 0 (2^strLength -1) (2^sSize)
->			strings = fmap (map (toBinFixedLength strLength)) l
->			complexities = fmap (map (toInteger. B.length . (encode ps))) strings
->		in
->			fmap histogram complexities
+> distribution ps strLength sSize = do
+>		l <- randomList 0 (2^strLength -1) (2^sSize)
+>		return $ histogram ( (PS.parMap PS.rdeepseq (toInteger. B.length . (encode ps)) (map (toBinFixedLength strLength) l)))
 
 > printDistribution :: Integer -> Map.Map Integer Integer -> String
 > printDistribution n m = (" 0.0 , " ++ show (2^n) ++ "\n") ++ concat ( map (\x -> (show (fst x)) ++ " , " ++ (show (snd x)) ++ "\n") (Map.assocs m))
@@ -38,7 +35,9 @@ Distribution : Distribution of complexities for strings of a given length
 Get a list of strings; return a list of encoded strings
 
 > encodeList :: Parameters -> Map.Map W.Word8 B.ByteString  -> [B.ByteString] -> [String]
-> encodeList ps d =  map (C.unpack.(encode ps).(toBinaryString d)) 
+> encodeList ps d ls = encoded where
+>		bs = map (C.unpack.(encode ps).(toBinaryString d)) ls
+>		encoded = bs `PS.using` PS.parList PS.rdeepseq
 
 ++++++++++ Command line parsing / Help ++++++++++++++++++
 
