@@ -1,3 +1,5 @@
+> {-# LANGUAGE ViewPatterns #-}
+
 StringUtils.lhs - A set of functions performing basic operations (mostly
 on ByteStrings)
 

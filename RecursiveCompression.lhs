@@ -136,9 +136,10 @@ The Boolean *b* given as parameter is here only tell whether the algorithm reach
 `encode` : call `encodeT` trying all possible values of *t*, keep the best.  
 
 > encode :: Parameters -> B.ByteString -> B.ByteString
-> encode ps s = encodings
+> encode ps s = selfDelimited (toBin n) `B.append` encodings
 >	where
->		n = toInteger $ B.length s
+>		strLen = B.length s
+>		n = toInteger strLen
 >		mt' = if (mt ps) < 0 then n else (mt ps)
 >		longWord = C.pack (replicate 2000 '0')
 >		getBest b t = if (B.length e) <= (B.length b) then e else b
