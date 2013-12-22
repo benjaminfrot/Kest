@@ -43,7 +43,7 @@ Get a list of strings; return a list of encoded strings
 
 ++++++++++ Command line parsing / Help ++++++++++++++++++
 
-> summaryStr = summary "Kest V.2.3 2013  -- benjamin.frot@dtc.ox.ac.uk"
+> summaryStr = summary "Kest V.2.3 2013  -- benjamin.frot@stats.ox.ac.uk"
 > data Kest = 
 >		Dist {stringLength :: Integer, maxLength :: Integer, sampleSize :: Integer, rrecursionDepth :: Integer,enumTh :: Int}
 >	 | File {maxLength :: Integer, rrecursionDepth :: Integer, filename :: FilePath, justK :: Bool, dictionary :: FilePath, enumTh :: Int}
