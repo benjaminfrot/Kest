@@ -45,24 +45,24 @@ Get a list of strings; return a list of encoded strings
 
 > summaryStr = summary "Kest V.2.3 2013  -- benjamin.frot@stats.ox.ac.uk"
 > data Kest = 
->		Dist {stringLength :: Integer, maxLength :: Integer, sampleSize :: Integer, rrecursionDepth :: Integer,enumTh :: Int}
->	 | File {maxLength :: Integer, rrecursionDepth :: Integer, filename :: FilePath, justK :: Bool, dictionary :: FilePath, enumTh :: Int}
->	 | SingleStr {inputStr :: String, maxLength :: Integer, rrecursionDepth :: Integer, justK :: Bool, dictionary :: FilePath, enumTh :: Int}
+>		Dist {stringLength :: Integer, maxLength :: Integer, sampleSize :: Integer, recursionDepth :: Integer,enumTh :: Int}
+>	 | File {maxLength :: Integer, recursionDepth :: Integer, filename :: FilePath, justK :: Bool, dictionary :: FilePath, enumTh :: Int}
+>	 | SingleStr {inputStr :: String, maxLength :: Integer, recursionDepth :: Integer, justK :: Bool, dictionary :: FilePath, enumTh :: Int}
 >	deriving (Eq,Show,Data,Typeable)
 
 > dist = Dist 
 >	{
 >	stringLength = 10 &= strLHelp
->	,sampleSize = 10 &= help "Number of strings to sample : 2^sampleSize. Default is 10, so 1024 are sampled."
+>	,sampleSize = 10 &= help "Number of strings to sample : 2^stringLength. Default is 10, so 1024 are sampled."
 >	, maxLength = -1 &= mLHelp
->	, rrecursionDepth = 0 &= rDHelp
+>	, recursionDepth = 0 &= rDHelp
 >	, enumTh = 5 &= enumHelp
 > } &= help "Compute the distribution of complexities for strings of a given length by sampling the space uniformly at random."
 
 > file = File
 >	{
 >	maxLength = -1 &= mLHelp
->	, rrecursionDepth = 0 &= rDHelp
+>	, recursionDepth = 0 &= rDHelp
 >	, filename = "./to_encode" &= fnHelp
 > , dictionary = "" &= dictHelp
 > , justK = False &= justKHelp
@@ -73,7 +73,7 @@ Get a list of strings; return a list of encoded strings
 >	{
 >	inputStr = "000000000" &= iShelp
 >	, maxLength = -1 &= mLHelp
->	, rrecursionDepth = 0 &= rDHelp
+>	, recursionDepth = 0 &= rDHelp
 > , dictionary = "" &= dictHelp
 > , justK = False &= justKHelp
 >	, enumTh = 5 &= enumHelp
@@ -84,7 +84,7 @@ Get a list of strings; return a list of encoded strings
 > rDHelp = help "Once a patten has been found, how many other patterns should the algorithm try to detect. 0 means no extra patterns. Default 1."
 > fnHelp = help "Filename containing the list of strings to encode. Make sure there are no empty lines. Default ./to_encode"
 > iShelp = help "String to be encoded."
-> dictHelp = help "For non binary strings, the user can specify a file containing the mapping symbol -> bitword. It is of the form symbol:bitword, with one entry per line. For example, the mapping ( -> 10 , . -> 00 , ) -> 01 is written as: \n.:00\n(:10\n):01\n. By default strings will be converted automatically." 
+> dictHelp = help "For non binary strings, the user can specify a file containing the mapping 'symbol -> bitword'. It is of the form symbol:bitword, with one entry per line. For example, the mapping ( -> 10 , . -> 00 , ) -> 01 is written as: \n.:00\n(:10\n):01\n. By default strings will be converted automatically." 
 > justKHelp = help "Whether only the length of the encoding should be output instead of the whole string. Default False."
 > enumHelp = help "Enumeration threshold. If the pattern is found more than enumTh times then do not enumerate all possible 2^enumTh possibilities and replace all the occurences of the pattern at once. Default : 5."
 > mode = cmdArgs $ modes [dist&=auto,file,single] &= summaryStr &= help "Approximate Kolmogorov complexity by encoding binary strings. Patterns of various length are detected and the input is recursively encoded. It can be *very* time consuming, the recursion depth should be chosen small. Parallel execution is supported : add +RTS -N to use all available cores, +RTS -Nn to use n cores, e.g. ./Kest -f myStrings +RTS -N2"
@@ -112,15 +112,15 @@ Main function : parse arguments
 > main = do 
 >		arguments <- mode
 >		case arguments of
->			Dist {stringLength = n, maxLength = m, sampleSize = s, rrecursionDepth = d, enumTh = eTh} -> do
+>			Dist {stringLength = n, maxLength = m, sampleSize = s, recursionDepth = d, enumTh = eTh} -> do
 >				complexities <- distribution (defPS {mt = m, maxRRDepth = d, enumThreshold = eTh}) n s
 >				putStrLn $ printDistribution s complexities
->			File {filename = fn, maxLength = m, rrecursionDepth = d, justK = jK, dictionary = dct, enumTh = eTh} -> do
+>			File {filename = fn, maxLength = m, recursionDepth = d, justK = jK, dictionary = dct, enumTh = eTh} -> do
 >				strs <- fmap C.lines (B.readFile fn)
 >				dict <- if (length dct) == 0 then return Map.empty else fmap (buildDict.C.lines) (B.readFile dct)
 >				putStrLn $ concat $ map ((\x -> x ++ "\n").(if jK then show.length else id)) 
 >					(encodeList (defPS {mt = m, maxRRDepth = d, enumThreshold = eTh}) dict strs) 
->			SingleStr {inputStr = iS, maxLength = m, rrecursionDepth = d, justK = jK, dictionary = dct, enumTh = eTh} -> do
+>			SingleStr {inputStr = iS, maxLength = m, recursionDepth = d, justK = jK, dictionary = dct, enumTh = eTh} -> do
 >				dict <- if (length dct) == 0 then return Map.empty else fmap (buildDict.C.lines) (B.readFile dct)
 >				putStrLn $ (if jK then show.B.length else C.unpack) $ 
 >					encode (defPS {mt = m, maxRRDepth = d, enumThreshold = eTh}) (((toBinaryString dict).C.pack) iS) 
